@@ -1,61 +1,127 @@
 {-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE GADTs                     #-}
+{-# LANGUAGE KindSignatures            #-}
+{-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE ViewPatterns              #-}
+
+import           Data.Dynamic
+import           Data.Maybe
 import           Prelude
 
 data MState = MState [MAtom] [Result]
-data MAtom = forall a. Show a => MAtom (Pattern a) (Matcher a) a
-data Result = forall a. Show a => Result a
+data MAtom = forall a. (Typeable a, Eq a, P a) => MAtom (Pattern a) (Matcher a) a
+type Result = Dynamic
 data Matcher a = Something | Matcher (Pattern a -> a -> [[MAtom]])
 
-data CollectionPattern a = Wildcard | PatVar String | ValuePat a | LambdaPat ([Result] -> a) | Nil | Cons a (CollectionPattern [a]) | Join (CollectionPattern [a]) (CollectionPattern [a])
-type Pattern a = CollectionPattern a
+data family Pattern a
 
+data instance Pattern Integer :: * where
+  IWildcard  :: Pattern Integer
+  IPatVar    :: String -> Pattern Integer
+  ILambdaPat :: ([Result] -> Integer) -> Pattern Integer
+  IValuePat  :: Integer -> Pattern Integer
 
-eq :: (Eq a, Show a) => Matcher a
-eq = Matcher eq'
+data instance Pattern [a] :: * where
+  LWildcard  :: Pattern [a]
+  LPatVar    :: String -> Pattern [a]
+  LLambdaPat :: ([Result] -> [a]) -> Pattern [a]
+  LValuePat  :: [a] -> Pattern [a]
+  LNilPat    :: Pattern [a]
+  LConsPat   :: Pattern a -> Pattern [a] -> Pattern [a]
+  LJoinPat   :: Pattern [a] -> Pattern [a] -> Pattern [a]
 
-eq' Wildcard _       = [[]]
-eq' (PatVar s) tgt   = [[MAtom (PatVar s) Something tgt]]
-eq' (ValuePat v) tgt = [[] | v == tgt]
+class P a where
+  wildcard :: Pattern a
+  patVar :: String -> Pattern a
+  lambdaPat :: ([Result] -> a) -> Pattern a
+  valuePat :: a -> Pattern a
 
-something :: Matcher a
-something = Something
+  isWildcard :: Pattern a -> Maybe ()
+  isPatVar :: Pattern a -> Maybe String
+  isLambdaPat :: Pattern a -> Maybe ([Result] -> a)
+  isValuePat :: Pattern a -> Maybe a
 
--- list :: (Eq a, Show a) => Matcher a -> Matcher [a]
--- list m = Matcher (\pat tgt ->
---   case pat of
---     Nil ->
---       case tgt of
---         [] -> [[]]
---         _ -> []
---     Cons a b ->
---       case tgt of
---         (x:xs) -> [[MAtom (ValuePat a) m x, MAtom b (list m) xs]]
---         _ -> []
---     Wildcard -> [[]]
---     PatVar s -> [[MAtom (PatVar s) Something tgt]]
---     ValuePat v -> if v == tgt then [[]] else [])
---
---
+instance P Integer where
+  wildcard = IWildcard
+  patVar = IPatVar
+  lambdaPat = ILambdaPat
+  valuePat = IValuePat
+
+  isWildcard IWildcard = Just ()
+  isWildcard _         = Nothing
+  isPatVar (IPatVar s) = Just s
+  isPatVar _           = Nothing
+  isLambdaPat (ILambdaPat f) = Just f
+  isLambdaPat _              = Nothing
+  isValuePat (IValuePat v) = Just v
+  isValuePat _             = Nothing
+
+instance P [a] where
+  wildcard = LWildcard
+  patVar = LPatVar
+  lambdaPat = LLambdaPat
+  valuePat = LValuePat
+
+  isWildcard LWildcard = Just ()
+  isWildcard _         = Nothing
+  isPatVar (LPatVar s) = Just s
+  isPatVar _           = Nothing
+  isLambdaPat (LLambdaPat f) = Just f
+  isLambdaPat _              = Nothing
+  isValuePat (LValuePat v) = Just v
+  isValuePat _             = Nothing
+
 processMStates :: [MState] -> [[Result]]
 processMStates [] = []
 processMStates (MState [] results:rs) = results:processMStates rs
 processMStates (mstate:rs) = processMStates (processMState mstate ++ rs)
 
 processMState :: MState -> [MState]
-processMState (MState (MAtom (LambdaPat f) (Matcher matcher) tgt:mstack) results) =
-  let nextmatomss = matcher (ValuePat $ f results) tgt in
-      map (\nextmatoms -> MState (nextmatoms ++ mstack) results) nextmatomss
-processMState (MState (MAtom Wildcard Something _:mstack) results) = [MState mstack results]
-processMState (MState (MAtom (PatVar _) Something tgt:mstack) results) = [MState mstack (results ++ [Result tgt])]
-processMState (MState (MAtom pat (Matcher matcher) tgt:mstack) results) =
-  let nextmatomss = matcher pat tgt in
-      map (\nextmatoms -> MState (nextmatoms ++ mstack) results) nextmatomss
+processMState (MState (MAtom (isWildcard -> Just _) Something t:atoms) rs) = [MState atoms rs]
+processMState (MState (MAtom (isPatVar -> Just _) Something t:atoms) rs) = [MState atoms (rs ++ [toDyn t])]
+processMState (MState (MAtom (isLambdaPat -> Just f) (Matcher m) t:atoms) rs) =
+  let next = m (valuePat $ f rs) t in
+      map (\nt -> MState (nt ++ atoms) rs) next
+processMState (MState (MAtom p (Matcher m) t:atoms) rs) =
+  map (\newAtoms -> MState (newAtoms ++ atoms) rs) (m p t)
 
-matchAll :: Show a => a -> Matcher a -> [(Pattern a, [Result] -> b)] -> [b]
+integerM :: Matcher Integer
+integerM = Matcher integerM'
+
+integerM' :: Pattern Integer -> Integer -> [[MAtom]]
+integerM' p@(isWildcard -> Just _) t = [[MAtom p Something t]]
+integerM' p@(isPatVar -> Just _) t   = [[MAtom p Something t]]
+integerM' (isValuePat -> Just v) t   = [[] | v == t]
+
+listM :: (Typeable a, Eq a, P a) => Matcher a -> Matcher [a]
+listM m = Matcher (listM' m)
+
+listM' :: (Typeable a, Eq a, P a) => Matcher a -> Pattern [a] -> [a] -> [[MAtom]]
+listM' _ p@(isWildcard -> Just _) t = [[MAtom p Something t]]
+listM' _ p@(LPatVar _) t = [[MAtom p Something t]]
+listM' _ (LValuePat v) t = [[] | v == t]
+listM' _ (LConsPat _ _) [] = []
+listM' m (LConsPat p1 p2) (t:ts) = [[MAtom p1 m t, MAtom p2 (listM m) ts]]
+listM' m (LJoinPat p1 p2) t = map (\(hs, ts) -> [MAtom p1 (listM m) hs, MAtom p2 (listM m) ts]) (unjoin t)
+
+unjoin :: [a] -> [([a], [a])]
+unjoin []     = [([], [])]
+unjoin (x:xs) = ([], xs) : map (\(hs,ts) -> (x:hs, ts)) (unjoin xs)
+
+matchAll :: (Typeable a, Eq a, P a) => a -> Matcher a -> [(Pattern a, [Result] -> b)] -> [b]
 matchAll tgt matcher =
   foldr (\(pat, f) matches ->
     let resultss = processMStates [MState [MAtom pat matcher tgt] []] in
         map f resultss ++ matches) []
 
--- main = print $ matchAll [1,2,5,9,4] (list eq) [(Cons 1 (Cons (PatVar "x") Wildcard), \[Result x] -> x + 2)] -- -> 4
-main = print $ matchAll [1,2,5,9,4] eq [(PatVar "x", \[Result x] -> show x)] -- ok
+main :: IO ()
+main = do
+  let pat1 = wildcard :: Pattern Integer
+  let pat2 = LConsPat wildcard wildcard :: Pattern [Integer]
+  let pat3 = LConsPat (LConsPat wildcard wildcard) wildcard :: Pattern [[Integer]]
+  let patTwinPrimes = LJoinPat wildcard (LConsPat (patVar "p") (LConsPat (lambdaPat (\rs -> case map fromDynamic rs of [Just p] -> p + 2)) wildcard)) :: Pattern [Integer]
+
+  let [(x, xs)] = matchAll [1,2,5,9,4] (listM integerM) [(LConsPat (patVar "x") (patVar "xs"), \[x, xs] -> (fromJust $ fromDynamic x :: Integer, fromJust $ fromDynamic xs :: [Integer]))]
+  print (x, xs)
+
+  return ()
