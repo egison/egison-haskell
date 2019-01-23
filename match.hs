@@ -6,6 +6,7 @@
 
 import           Data.Dynamic
 import           Data.Maybe
+import           Data.Numbers.Primes
 import           Prelude
 
 data MState = MState [MAtom] [Result]
@@ -123,5 +124,8 @@ main = do
 
   let [(x, xs)] = matchAll [1,2,5,9,4] (listM integerM) [(LConsPat (patVar "x") (patVar "xs"), \[x, xs] -> (fromJust $ fromDynamic x :: Integer, fromJust $ fromDynamic xs :: [Integer]))]
   print (x, xs)
+
+  let twinprimes = matchAll primes (listM integerM) [(patTwinPrimes, \[p] -> let p' = fromJust $ fromDynamic p :: Integer in (p', p' + 2))]
+  print $ take 10 twinprimes
 
   return ()
