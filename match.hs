@@ -81,13 +81,15 @@ instance P [a] where
 -- matcher
 --
 
-integerM :: Matcher Integer
-integerM = Matcher integerM'
+eqM :: (Typeable a, Eq a, P a) => Matcher a
+eqM = Matcher eqM'
 
-integerM' :: Pattern Integer -> Integer -> [[MAtom]]
-integerM' p@(isWildcard -> Just _) t = [[MAtom p Something t]]
-integerM' p@(isPatVar -> Just _) t   = [[MAtom p Something t]]
-integerM' (isValuePat -> Just v) t   = [[] | v == t]
+eqM' :: (Typeable a, Eq a, P a) => Pattern a -> a -> [[MAtom]]
+eqM' p@(isWildcard -> Just _) t = [[MAtom p Something t]]
+eqM' p@(isPatVar -> Just _) t   = [[MAtom p Something t]]
+eqM' (isValuePat -> Just v) t   = [[] | v == t]
+
+integerM = eqM
 
 listM :: (Typeable a, Eq a, P a) => Matcher a -> Matcher [a]
 listM m = Matcher (listM' m)
