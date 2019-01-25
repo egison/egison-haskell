@@ -26,12 +26,21 @@ data instance Pattern Integer :: * where
   IPatVar    :: String -> Pattern Integer
   ILambdaPat :: ([Result] -> Integer) -> Pattern Integer
   IValuePat  :: Integer -> Pattern Integer
+  IAndPat :: Pattern Integer -> Pattern Integer -> Pattern Integer
+  IOrPat :: Pattern Integer -> Pattern Integer -> Pattern Integer
+  INotPat :: Pattern Integer -> Pattern Integer
+  ILaterPat :: Pattern Integer -> Pattern Integer
 
 data instance Pattern [a] :: * where
   LWildcard  :: Pattern [a]
   LPatVar    :: String -> Pattern [a]
   LLambdaPat :: ([Result] -> [a]) -> Pattern [a]
   LValuePat  :: [a] -> Pattern [a]
+  LAndPat :: Pattern [a] -> Pattern [a] -> Pattern [a]
+  LOrPat :: Pattern [a] -> Pattern [a] -> Pattern [a]
+  LNotPat :: Pattern [a] -> Pattern [a]
+  LLaterPat :: Pattern [a] -> Pattern [a]
+
   LNilPat    :: Pattern [a]
   LConsPat   :: Pattern a -> Pattern [a] -> Pattern [a]
   LJoinPat   :: Pattern [a] -> Pattern [a] -> Pattern [a]
@@ -41,17 +50,29 @@ class P a where
   patVar :: String -> Pattern a
   lambdaPat :: ([Result] -> a) -> Pattern a
   valuePat :: a -> Pattern a
+  andPat :: Pattern a -> Pattern a -> Pattern a
+  orPat :: Pattern a -> Pattern a -> Pattern a
+  notPat :: Pattern a -> Pattern a
+  laterPat :: Pattern a -> Pattern a
 
   isWildcard :: Pattern a -> Maybe ()
   isPatVar :: Pattern a -> Maybe String
   isLambdaPat :: Pattern a -> Maybe ([Result] -> a)
   isValuePat :: Pattern a -> Maybe a
+  isAndPat :: Pattern a -> Maybe (Pattern a, Pattern a)
+  isOrPat :: Pattern a -> Maybe (Pattern a, Pattern a)
+  isNotPat :: Pattern a -> Maybe (Pattern a)
+  isLaterPat :: Pattern a -> Maybe (Pattern a)
 
 instance P Integer where
   wildcard = IWildcard
   patVar = IPatVar
   lambdaPat = ILambdaPat
   valuePat = IValuePat
+  andPat = IAndPat
+  orPat = IOrPat
+  notPat = INotPat
+  laterPat = ILaterPat
 
   isWildcard IWildcard = Just ()
   isWildcard _         = Nothing
@@ -61,12 +82,24 @@ instance P Integer where
   isLambdaPat _              = Nothing
   isValuePat (IValuePat v) = Just v
   isValuePat _             = Nothing
+  isAndPat (IAndPat p1 p2) = Just (p1, p2)
+  isAndPat _               = Nothing
+  isOrPat (IOrPat p1 p2) = Just (p1, p2)
+  isOrPat _              = Nothing
+  isNotPat (INotPat p) = Just p
+  isNotPat _           = Nothing
+  isLaterPat (ILaterPat p) = Just p
+  isLaterPat _             = Nothing
 
 instance P [a] where
   wildcard = LWildcard
   patVar = LPatVar
   lambdaPat = LLambdaPat
   valuePat = LValuePat
+  andPat = LAndPat
+  orPat = LOrPat
+  notPat = LNotPat
+  laterPat = LLaterPat
 
   isWildcard LWildcard = Just ()
   isWildcard _         = Nothing
@@ -76,6 +109,14 @@ instance P [a] where
   isLambdaPat _              = Nothing
   isValuePat (LValuePat v) = Just v
   isValuePat _             = Nothing
+  isAndPat (LAndPat p1 p2) = Just (p1, p2)
+  isAndPat _               = Nothing
+  isOrPat (LOrPat p1 p2) = Just (p1, p2)
+  isOrPat _              = Nothing
+  isNotPat (LNotPat p) = Just p
+  isNotPat _           = Nothing
+  isLaterPat (LLaterPat p) = Just p
+  isLaterPat _             = Nothing
 
 --
 -- matcher
@@ -89,31 +130,31 @@ eqM' p@(isWildcard -> Just _) t = [[MAtom p Something t]]
 eqM' p@(isPatVar -> Just _) t   = [[MAtom p Something t]]
 eqM' (isValuePat -> Just v) t   = [[] | v == t]
 
-integerM = eqM
+integer = eqM
 
-listM :: (Typeable a, Eq a, P a) => Matcher a -> Matcher [a]
-listM m = Matcher (listM' m)
+list :: (Typeable a, Eq a, P a) => Matcher a -> Matcher [a]
+list m = Matcher (list' m)
 
-listM' :: (Typeable a, Eq a, P a) => Matcher a -> Pattern [a] -> [a] -> [[MAtom]]
-listM' _ p@(isWildcard -> Just _) t = [[MAtom p Something t]]
-listM' _ p@(LPatVar _) t = [[MAtom p Something t]]
-listM' _ (LValuePat v) t = [[] | v == t]
-listM' _ LNilPat t = [[] | null t]
-listM' _ (LConsPat _ _) [] = []
-listM' m (LConsPat p1 p2) (t:ts) = [[MAtom p1 m t, MAtom p2 (listM m) ts]]
-listM' m (LJoinPat p1 p2) t = map (\(hs, ts) -> [MAtom p1 (listM m) hs, MAtom p2 (listM m) ts]) (unjoin t)
+list' :: (Typeable a, Eq a, P a) => Matcher a -> Pattern [a] -> [a] -> [[MAtom]]
+list' _ p@(isWildcard -> Just _) t = [[MAtom p Something t]]
+list' _ p@(isPatVar -> Just _) t = [[MAtom p Something t]]
+list' _ (isValuePat -> Just v) t = [[] | v == t]
+list' _ LNilPat t = [[] | null t]
+list' _ (LConsPat _ _) [] = []
+list' m (LConsPat p1 p2) (t:ts) = [[MAtom p1 m t, MAtom p2 (list m) ts]]
+list' m (LJoinPat p1 p2) t = map (\(hs, ts) -> [MAtom p1 (list m) hs, MAtom p2 (list m) ts]) (unjoin t)
 
-multisetM :: (Typeable a, Eq a, P a) => Matcher a -> Matcher [a]
-multisetM m = Matcher (multisetM' m)
+multiset :: (Typeable a, Eq a, P a) => Matcher a -> Matcher [a]
+multiset m = Matcher (multiset' m)
 
-multisetM' :: (Typeable a, Eq a, P a) => Matcher a -> Pattern [a] -> [a] -> [[MAtom]]
-multisetM' _ p@(isWildcard -> Just _) t = [[MAtom p Something t]]
-multisetM' _ p@(LPatVar _) t = [[MAtom p Something t]]
-multisetM' _ (LValuePat v) t = [[] | v == t]
-multisetM' _ LNilPat t = [[] | null t]
-multisetM' m (LConsPat p1 p2) t =
-  map (\(x, xs) -> [MAtom p1 m x, MAtom p2 (multisetM m) xs])
-    (matchAll t (listM m)
+multiset' :: (Typeable a, Eq a, P a) => Matcher a -> Pattern [a] -> [a] -> [[MAtom]]
+multiset' _ p@(isWildcard -> Just _) t = [[MAtom p Something t]]
+multiset' _ p@(isPatVar -> Just _) t = [[MAtom p Something t]]
+multiset' _ (isValuePat -> Just v) t = [[] | v == t]
+multiset' _ LNilPat t = [[] | null t]
+multiset' m (LConsPat p1 p2) t =
+  map (\(x, xs) -> [MAtom p1 m x, MAtom p2 (multiset m) xs])
+    (matchAll t (list m)
       [(LJoinPat (patVar "hs") (LConsPat (patVar "x") (patVar "ts")), \[hs, x, ts] -> let x' = fromJust $ fromDynamic x in let hs' = fromJust $ fromDynamic hs in let ts' = fromJust $ fromDynamic ts in (x', hs' ++ ts'))])
 
 unjoin :: [a] -> [([a], [a])]
@@ -135,6 +176,10 @@ processMState (MState (MAtom (isPatVar -> Just _) Something t:atoms) rs) = [MSta
 processMState (MState (MAtom (isLambdaPat -> Just f) (Matcher m) t:atoms) rs) =
   let next = m (valuePat $ f rs) t in
       map (\nt -> MState (nt ++ atoms) rs) next
+processMState (MState (MAtom (isAndPat -> Just (p1, p2)) m t:atoms) rs) = [MState (MAtom p1 m t:MAtom p2 m t:atoms) rs]
+processMState (MState (MAtom (isOrPat -> Just (p1, p2)) m t:atoms) rs) = [MState (MAtom p1 m t:atoms) rs, MState (MAtom p2 m t:atoms) rs]
+processMState (MState (MAtom (isNotPat -> Just p) m t:atoms) rs) = [MState atoms rs | null $ processMStates [MState [MAtom p m t] rs]]
+processMState (MState (MAtom (isLaterPat -> Just p) m t:atoms) rs) = [MState (atoms ++ [MAtom p m t]) rs]
 processMState (MState (MAtom p (Matcher m) t:atoms) rs) =
   map (\newAtoms -> MState (newAtoms ++ atoms) rs) (m p t)
 
@@ -155,16 +200,24 @@ main = do
   let pat3 = LConsPat (LConsPat wildcard wildcard) wildcard :: Pattern [[Integer]]
   let patTwinPrimes = LJoinPat wildcard (LConsPat (patVar "p") (LConsPat (lambdaPat (\rs -> case map fromDynamic rs of [Just p] -> p + 2)) wildcard)) :: Pattern [Integer]
 
-  let [(x, xs)] = matchAll [1,2,5,9,4] (listM integerM) [(LConsPat (patVar "x") (patVar "xs"), \[x, xs] -> (fromJust $ fromDynamic x :: Integer, fromJust $ fromDynamic xs :: [Integer]))]
+  -- list
+  let [(x, xs)] = matchAll [1,2,5,9,4] (list integer) [(LConsPat (patVar "x") (patVar "xs"), \[x, xs] -> (fromJust $ fromDynamic x :: Integer, fromJust $ fromDynamic xs :: [Integer]))]
   assert ((x, xs) == (1, [2,5,9,4])) $ print "ok 1"
 
-  let twinprimes = matchAll primes (listM integerM) [(patTwinPrimes, \[p] -> let p' = fromJust $ fromDynamic p :: Integer in (p', p' + 2))]
+  -- infinite target
+  let twinprimes = matchAll primes (list integer) [(patTwinPrimes, \[p] -> let p' = fromJust $ fromDynamic p :: Integer in (p', p' + 2))]
   assert (take 10 twinprimes == [(3,5),(5,7),(11,13),(17,19),(29,31),(41,43),(59,61),(71,73),(101,103),(107,109)]) $ print "ok 2"
 
-  let xss = matchAll [1,2,5,9,4] (multisetM integerM) [(LConsPat (patVar "x") (patVar "xs"), \[x, xs] -> (fromJust $ fromDynamic x :: Integer, fromJust $ fromDynamic xs :: [Integer]))]
+  -- multiset
+  let xss = matchAll [1,2,5,9,4] (multiset integer) [(LConsPat (patVar "x") (patVar "xs"), \[x, xs] -> (fromJust $ fromDynamic x :: Integer, fromJust $ fromDynamic xs :: [Integer]))]
   assert (xss == [(1,[2,5,9,4]),(2,[1,5,9,4]),(5,[1,2,9,4]),(9,[1,2,5,4]),(4,[1,2,5,9])]) $ print "ok 3"
 
-  let xss2 = matchAll [1,2,5,9,4] (multisetM integerM) [(LConsPat (patVar "xs") (LConsPat (valuePat 2) (patVar "ys")), \[xs, ys] -> (fromJust $ fromDynamic xs :: Integer, fromJust $ fromDynamic ys :: [Integer]))]
-  assert (xss2 == [(1,[5,9,4]),(5,[1,9,4]),(9,[1,5,4]),(4,[1,5,9])]) $ print "ok 4"
+  -- value, and pattern
+  let xss2 = matchAll [1,2,5,9,4] (multiset integer) [(LConsPat (patVar "x") (LConsPat (andPat (valuePat 2) (patVar "y")) (patVar "xs")), \[x, y, xs] -> (fromJust $ fromDynamic x :: Integer, fromJust $ fromDynamic y :: Integer, fromJust $ fromDynamic xs :: [Integer]))]
+  assert (xss2 == [(1,2,[5,9,4]),(5,2,[1,9,4]),(9,2,[1,5,4]),(4,2,[1,5,9])]) $ print "ok 4"
+
+  -- later pattern
+  let xss3 = match [1..5] (list integer) [(LConsPat (laterPat (lambdaPat (\rs -> case map fromDynamic rs of [Just p, _] -> p - 1))) (LConsPat (patVar "x") (patVar "xs")), \[x, xs] -> (fromJust $ fromDynamic x :: Integer, fromJust $ fromDynamic xs :: [Integer]))]
+  assert (xss3 == (2,[3,4,5])) $ print "ok 5"
 
   return ()
