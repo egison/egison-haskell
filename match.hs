@@ -41,9 +41,9 @@ data instance Pattern [a] :: * where
   LNotPat :: Pattern [a] -> Pattern [a]
   LLaterPat :: Pattern [a] -> Pattern [a]
 
-  LNilPat    :: Pattern [a]
-  LConsPat   :: Pattern a -> Pattern [a] -> Pattern [a]
-  LJoinPat   :: Pattern [a] -> Pattern [a] -> Pattern [a]
+  NilPat    :: Pattern [a]
+  ConsPat   :: Pattern a -> Pattern [a] -> Pattern [a]
+  JoinPat   :: Pattern [a] -> Pattern [a] -> Pattern [a]
 
 class P a where
   wildcard :: Pattern a
@@ -139,10 +139,10 @@ list' :: (Typeable a, Eq a, P a) => Matcher a -> Pattern [a] -> [a] -> [[MAtom]]
 list' _ p@(isWildcard -> Just _) t = [[MAtom p Something t]]
 list' _ p@(isPatVar -> Just _) t = [[MAtom p Something t]]
 list' _ (isValuePat -> Just v) t = [[] | v == t]
-list' _ LNilPat t = [[] | null t]
-list' _ (LConsPat _ _) [] = []
-list' m (LConsPat p1 p2) (t:ts) = [[MAtom p1 m t, MAtom p2 (list m) ts]]
-list' m (LJoinPat p1 p2) t = map (\(hs, ts) -> [MAtom p1 (list m) hs, MAtom p2 (list m) ts]) (unjoin t)
+list' _ NilPat t = [[] | null t]
+list' _ (ConsPat _ _) [] = []
+list' m (ConsPat p1 p2) (t:ts) = [[MAtom p1 m t, MAtom p2 (list m) ts]]
+list' m (JoinPat p1 p2) t = map (\(hs, ts) -> [MAtom p1 (list m) hs, MAtom p2 (list m) ts]) (unjoin t)
 
 multiset :: (Typeable a, Eq a, P a) => Matcher a -> Matcher [a]
 multiset m = Matcher (multiset' m)
@@ -151,11 +151,11 @@ multiset' :: (Typeable a, Eq a, P a) => Matcher a -> Pattern [a] -> [a] -> [[MAt
 multiset' _ p@(isWildcard -> Just _) t = [[MAtom p Something t]]
 multiset' _ p@(isPatVar -> Just _) t = [[MAtom p Something t]]
 multiset' _ (isValuePat -> Just v) t = [[] | v == t]
-multiset' _ LNilPat t = [[] | null t]
-multiset' m (LConsPat p1 p2) t =
+multiset' _ NilPat t = [[] | null t]
+multiset' m (ConsPat p1 p2) t =
   map (\(x, xs) -> [MAtom p1 m x, MAtom p2 (multiset m) xs])
     (matchAll t (list m)
-      [(LJoinPat (patVar "hs") (LConsPat (patVar "x") (patVar "ts")), \[hs, x, ts] -> let x' = fromJust $ fromDynamic x in let hs' = fromJust $ fromDynamic hs in let ts' = fromJust $ fromDynamic ts in (x', hs' ++ ts'))])
+      [(JoinPat (patVar "hs") (ConsPat (patVar "x") (patVar "ts")), \[hs, x, ts] -> let x' = fromJust $ fromDynamic x in let hs' = fromJust $ fromDynamic hs in let ts' = fromJust $ fromDynamic ts in (x', hs' ++ ts'))])
 
 unjoin :: [a] -> [([a], [a])]
 unjoin []     = [([], [])]
@@ -196,28 +196,28 @@ match t m xs = head $ matchAll t m xs
 main :: IO ()
 main = do
   let pat1 = wildcard :: Pattern Integer
-  let pat2 = LConsPat wildcard wildcard :: Pattern [Integer]
-  let pat3 = LConsPat (LConsPat wildcard wildcard) wildcard :: Pattern [[Integer]]
-  let patTwinPrimes = LJoinPat wildcard (LConsPat (patVar "p") (LConsPat (lambdaPat (\rs -> case map fromDynamic rs of [Just p] -> p + 2)) wildcard)) :: Pattern [Integer]
+  let pat2 = ConsPat wildcard wildcard :: Pattern [Integer]
+  let pat3 = ConsPat (ConsPat wildcard wildcard) wildcard :: Pattern [[Integer]]
+  let patTwinPrimes = JoinPat wildcard (ConsPat (patVar "p") (ConsPat (lambdaPat (\rs -> case map fromDynamic rs of [Just p] -> p + 2)) wildcard)) :: Pattern [Integer]
 
   -- list
-  let [(x, xs)] = matchAll [1,2,5,9,4] (list integer) [(LConsPat (patVar "x") (patVar "xs"), \[x, xs] -> (fromJust $ fromDynamic x :: Integer, fromJust $ fromDynamic xs :: [Integer]))]
-  assert ((x, xs) == (1, [2,5,9,4])) $ print "ok 1"
+  let xss0 = match [1,2,5,9,4] (list integer) [(ConsPat (patVar "x") (patVar "xs"), \[x, xs] -> (fromJust $ fromDynamic x :: Integer, fromJust $ fromDynamic xs :: [Integer]))]
+  assert (xss0 == (1, [2,5,9,4])) $ print "ok 1"
 
   -- infinite target
   let twinprimes = matchAll primes (list integer) [(patTwinPrimes, \[p] -> let p' = fromJust $ fromDynamic p :: Integer in (p', p' + 2))]
   assert (take 10 twinprimes == [(3,5),(5,7),(11,13),(17,19),(29,31),(41,43),(59,61),(71,73),(101,103),(107,109)]) $ print "ok 2"
 
   -- multiset
-  let xss = matchAll [1,2,5,9,4] (multiset integer) [(LConsPat (patVar "x") (patVar "xs"), \[x, xs] -> (fromJust $ fromDynamic x :: Integer, fromJust $ fromDynamic xs :: [Integer]))]
-  assert (xss == [(1,[2,5,9,4]),(2,[1,5,9,4]),(5,[1,2,9,4]),(9,[1,2,5,4]),(4,[1,2,5,9])]) $ print "ok 3"
+  let xss1 = matchAll [1,2,5,9,4] (multiset integer) [(ConsPat (patVar "x") (patVar "xs"), \[x, xs] -> (fromJust $ fromDynamic x :: Integer, fromJust $ fromDynamic xs :: [Integer]))]
+  assert (xss1 == [(1,[2,5,9,4]),(2,[1,5,9,4]),(5,[1,2,9,4]),(9,[1,2,5,4]),(4,[1,2,5,9])]) $ print "ok 3"
 
   -- value, and pattern
-  let xss2 = matchAll [1,2,5,9,4] (multiset integer) [(LConsPat (patVar "x") (LConsPat (andPat (valuePat 2) (patVar "y")) (patVar "xs")), \[x, y, xs] -> (fromJust $ fromDynamic x :: Integer, fromJust $ fromDynamic y :: Integer, fromJust $ fromDynamic xs :: [Integer]))]
+  let xss2 = matchAll [1,2,5,9,4] (multiset integer) [(ConsPat (patVar "x") (ConsPat (andPat (valuePat 2) (patVar "y")) (patVar "xs")), \[x, y, xs] -> (fromJust $ fromDynamic x :: Integer, fromJust $ fromDynamic y :: Integer, fromJust $ fromDynamic xs :: [Integer]))]
   assert (xss2 == [(1,2,[5,9,4]),(5,2,[1,9,4]),(9,2,[1,5,4]),(4,2,[1,5,9])]) $ print "ok 4"
 
   -- later pattern
-  let xss3 = match [1..5] (list integer) [(LConsPat (laterPat (lambdaPat (\rs -> case map fromDynamic rs of [Just p, _] -> p - 1))) (LConsPat (patVar "x") (patVar "xs")), \[x, xs] -> (fromJust $ fromDynamic x :: Integer, fromJust $ fromDynamic xs :: [Integer]))]
+  let xss3 = match [1..5] (list integer) [(ConsPat (laterPat (lambdaPat (\rs -> case map fromDynamic rs of [Just p, _] -> p - 1))) (ConsPat (patVar "x") (patVar "xs")), \[x, xs] -> (fromJust $ fromDynamic x :: Integer, fromJust $ fromDynamic xs :: [Integer]))]
   assert (xss3 == (2,[3,4,5])) $ print "ok 5"
 
   return ()
