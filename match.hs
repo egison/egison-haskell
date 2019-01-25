@@ -212,9 +212,9 @@ main = do
   let xss1 = matchAll [1,2,5,9,4] (multiset integer) [(ConsPat (patVar "x") (patVar "xs"), \[x, xs] -> (fromJust $ fromDynamic x :: Integer, fromJust $ fromDynamic xs :: [Integer]))]
   assert (xss1 == [(1,[2,5,9,4]),(2,[1,5,9,4]),(5,[1,2,9,4]),(9,[1,2,5,4]),(4,[1,2,5,9])]) $ print "ok 3"
 
-  -- value, and pattern
-  let xss2 = matchAll [1,2,5,9,4] (multiset integer) [(ConsPat (patVar "x") (ConsPat (andPat (valuePat 2) (patVar "y")) (patVar "xs")), \[x, y, xs] -> (fromJust $ fromDynamic x :: Integer, fromJust $ fromDynamic y :: Integer, fromJust $ fromDynamic xs :: [Integer]))]
-  assert (xss2 == [(1,2,[5,9,4]),(5,2,[1,9,4]),(9,2,[1,5,4]),(4,2,[1,5,9])]) $ print "ok 4"
+  -- value, and, or, not pattern
+  let xss2 = matchAll [1,2,5,9,4] (multiset integer) [(ConsPat (andPat (notPat (valuePat 5)) (patVar "x")) (ConsPat (andPat (orPat (valuePat 1) (valuePat 2)) (patVar "y")) (patVar "xs")), \[x, y, xs] -> (fromJust $ fromDynamic x :: Integer, fromJust $ fromDynamic y :: Integer, fromJust $ fromDynamic xs :: [Integer]))]
+  assert (xss2 == [(1,2,[5,9,4]),(2,1,[5,9,4]),(9,1,[2,5,4]),(9,2,[1,5,4]),(4,1,[2,5,9]),(4,2,[1,5,9])]) $ print "ok 4"
 
   -- later pattern
   let xss3 = match [1..5] (list integer) [(ConsPat (laterPat (lambdaPat (\rs -> case map fromDynamic rs of [Just p, _] -> p - 1))) (ConsPat (patVar "x") (patVar "xs")), \[x, xs] -> (fromJust $ fromDynamic x :: Integer, fromJust $ fromDynamic xs :: [Integer]))]
