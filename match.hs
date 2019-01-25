@@ -115,7 +115,6 @@ multisetM' m (LConsPat p1 p2) t =
   map (\(x, xs) -> [MAtom p1 m x, MAtom p2 (multisetM m) xs])
     (matchAll t (listM m)
       [(LJoinPat (patVar "hs") (LConsPat (patVar "x") (patVar "ts")), \[hs, x, ts] -> let x' = fromJust $ fromDynamic x in let hs' = fromJust $ fromDynamic hs in let ts' = fromJust $ fromDynamic ts in (x', hs' ++ ts'))])
-multisetM' m (LJoinPat p1 p2) t = map (\(hs, ts) -> [MAtom p1 (multisetM m) hs, MAtom p2 (multisetM m) ts]) (unjoin t)
 
 unjoin :: [a] -> [([a], [a])]
 unjoin []     = [([], [])]
@@ -165,7 +164,7 @@ main = do
   let xss = matchAll [1,2,5,9,4] (multisetM integerM) [(LConsPat (patVar "x") (patVar "xs"), \[x, xs] -> (fromJust $ fromDynamic x :: Integer, fromJust $ fromDynamic xs :: [Integer]))]
   assert (xss == [(1,[2,5,9,4]),(2,[1,5,9,4]),(5,[1,2,9,4]),(9,[1,2,5,4]),(4,[1,2,5,9])]) $ print "ok 3"
 
-  let xss2 = matchAll [1,2,5,9,4] (multisetM integerM) [(LJoinPat (LConsPat (valuePat 2) (patVar "xs")) (patVar "ys"), \[xs, ys] -> (fromJust $ fromDynamic xs :: [Integer], fromJust $ fromDynamic ys :: [Integer]))]
-  assert (xss2 == [([1],[5,9,4]),([1,5],[9,4]),([1,5,9],[4]),([1,5,9,4],[])]) $ print "ok 4"
+  let xss2 = matchAll [1,2,5,9,4] (multisetM integerM) [(LConsPat (patVar "xs") (LConsPat (valuePat 2) (patVar "ys")), \[xs, ys] -> (fromJust $ fromDynamic xs :: Integer, fromJust $ fromDynamic ys :: [Integer]))]
+  assert (xss2 == [(1,[5,9,4]),(5,[1,9,4]),(9,[1,5,4]),(4,[1,5,9])]) $ print "ok 4"
 
   return ()
