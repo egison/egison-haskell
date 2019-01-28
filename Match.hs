@@ -39,6 +39,9 @@ data instance Pattern a :: * where
 -- matcher
 --
 
+something :: Matcher a
+something = Something
+
 eqM :: (Typeable a, Eq a) => Matcher a
 eqM = Matcher eqM'
 
