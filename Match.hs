@@ -46,8 +46,8 @@ eqM :: (Typeable a, Eq a) => Matcher a
 eqM = Matcher eqM'
 
 eqM' :: (Typeable a, Eq a) => Pattern a -> a -> [[MAtom]]
-eqM' p@Wildcard t = [[MAtom p Something t]]
-eqM' p@(PatVar _) t   = [[MAtom p Something t]]
+eqM' p@Wildcard t = [[MAtom p something t]]
+eqM' p@(PatVar _) t   = [[MAtom p something t]]
 eqM' (ValuePat v) t   = [[] | v == t]
 
 integer = eqM
@@ -56,8 +56,8 @@ list :: (Typeable a, Eq a) => Matcher a -> Matcher [a]
 list m = Matcher (list' m)
 
 list' :: (Typeable a, Eq a) => Matcher a -> Pattern [a] -> [a] -> [[MAtom]]
-list' _ p@Wildcard t = [[MAtom p Something t]]
-list' _ p@(PatVar _) t = [[MAtom p Something t]]
+list' _ p@Wildcard t = [[MAtom p something t]]
+list' _ p@(PatVar _) t = [[MAtom p something t]]
 list' _ (ValuePat v) t = [[] | v == t]
 list' _ NilPat t = [[] | null t]
 list' _ (ConsPat _ _) [] = []
@@ -68,8 +68,8 @@ multiset :: (Typeable a, Eq a) => Matcher a -> Matcher [a]
 multiset m = Matcher (multiset' m)
 
 multiset' :: (Typeable a, Eq a) => Matcher a -> Pattern [a] -> [a] -> [[MAtom]]
-multiset' _ p@Wildcard t = [[MAtom p Something t]]
-multiset' _ p@(PatVar _) t = [[MAtom p Something t]]
+multiset' _ p@Wildcard t = [[MAtom p something t]]
+multiset' _ p@(PatVar _) t = [[MAtom p something t]]
 multiset' _ (ValuePat v) t = [[] | v == t]
 multiset' _ NilPat t = [[] | null t]
 multiset' m (ConsPat p1 p2) t =
@@ -91,8 +91,8 @@ processMStates (MState [] results:rs) = results:processMStates rs
 processMStates (mstate:rs) = processMStates (processMState mstate ++ rs)
 
 processMState :: MState -> [MState]
-processMState (MState (MAtom Wildcard Something t:atoms) rs) = [MState atoms rs]
-processMState (MState (MAtom (PatVar _) Something t:atoms) rs) = [MState atoms (rs ++ [toDyn t])]
+processMState (MState (MAtom Wildcard something t:atoms) rs) = [MState atoms rs]
+processMState (MState (MAtom (PatVar _) something t:atoms) rs) = [MState atoms (rs ++ [toDyn t])]
 processMState (MState (MAtom (LambdaPat f) (Matcher m) t:atoms) rs) =
   let next = m (ValuePat $ f rs) t in
       map (\nt -> MState (nt ++ atoms) rs) next
