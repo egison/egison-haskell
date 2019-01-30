@@ -30,6 +30,7 @@ data instance Pattern a :: * where
   OrPat :: Pattern a -> Pattern a -> Pattern a
   NotPat :: Pattern a -> Pattern a
   LaterPat :: Pattern a -> Pattern a
+  PredicatePat :: (a -> Bool) -> Pattern a
 
   NilPat :: a ~ [b] => Pattern a
   ConsPat :: a ~ [b] => Pattern b -> Pattern a -> Pattern a
@@ -109,6 +110,7 @@ processMState (MState (MAtom (AndPat p1 p2) m t:atoms) rs) = [MState (MAtom p1 m
 processMState (MState (MAtom (OrPat p1 p2) m t:atoms) rs) = [MState (MAtom p1 m t:atoms) rs, MState (MAtom p2 m t:atoms) rs]
 processMState (MState (MAtom (NotPat p) m t:atoms) rs) = [MState atoms rs | null $ processMStatesAll [[MState [MAtom p m t] rs]]]
 processMState (MState (MAtom (LaterPat p) m t:atoms) rs) = [MState (atoms ++ [MAtom p m t]) rs]
+processMState (MState (MAtom (PredicatePat f) _ t:atoms) rs) = [MState atoms rs | f t]
 processMState (MState (MAtom p (Matcher m) t:atoms) rs) =
   map (\newAtoms -> MState (newAtoms ++ atoms) rs) (m p t)
 
@@ -165,6 +167,9 @@ main = do
   -- check order
   let xss4 = matchAll [1..] (multiset integer) [(ConsPat (PatVar "x") (ConsPat (PatVar "y") Wildcard), \[Result x, Result y] -> let x' = unsafeCoerce x in let y' = unsafeCoerce y in (x', y'))]
   assert (take 10 xss4 == [(1,2),(1,3),(2,1),(1,4),(2,3),(3,1),(1,5),(2,4),(3,2),(4,1)]) $ print "ok 6"
+
+  -- predicate pattern
+  assert (matchAll [1..10] (multiset integer) [(ConsPat (AndPat (PredicatePat (\x -> mod x 2 == 0)) (PatVar "x")) Wildcard, \[Result x] -> unsafeCoerce x :: Integer)] == [2,4,6,8]) $ print "ok 7"
 
   -- map, concat, uniq
   assert (pmMap (+ 10) [1,2,3] == [11, 12, 13]) $ print "ok map"
