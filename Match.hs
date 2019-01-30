@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeFamilies              #-}
 
 import           Control.Exception.Assert
-import           Data.Dynamic
+import           Data.List
 import           Data.Maybe
 import           Data.Numbers.Primes
 import           Prelude
@@ -75,7 +75,7 @@ multiset' _ NilPat t = [[] | null t]
 multiset' m (ConsPat p1 p2) t =
   map (\(x, xs) -> [MAtom p1 m x, MAtom p2 (multiset m) xs])
     (matchAll t (list m)
-      [(JoinPat (PatVar "hs") (ConsPat (PatVar "x") (PatVar "ts")), \[hs, x, ts] -> let x' = unsafeCoerce x in let hs' = unsafeCoerce hs in let ts' = unsafeCoerce ts in (x', hs' ++ ts'))])
+      [(JoinPat (PatVar "hs") (ConsPat (PatVar "x") (PatVar "ts")), \[Result hs, Result x, Result ts] -> let x' = unsafeCoerce x in let hs' = unsafeCoerce hs in let ts' = unsafeCoerce ts in (x', hs' ++ ts'))])
 
 unjoin :: [a] -> [([a], [a])]
 unjoin []     = [([], [])]
@@ -85,10 +85,21 @@ unjoin (x:xs) = ([], x:xs) : map (\(hs,ts) -> (x:hs, ts)) (unjoin xs)
 -- match
 --
 
-processMStates :: [MState] -> [[Result]]
-processMStates [] = []
-processMStates (MState [] results:rs) = results:processMStates rs
-processMStates (mstate:rs) = processMStates (processMState mstate ++ rs)
+processMStatesAll :: [[MState]] -> [[Result]]
+processMStatesAll [] = []
+processMStatesAll streams = let (results, streams') = extractResults $ concatMap processMStates streams in results ++ processMStatesAll streams'
+
+extractResults :: [[MState]] -> ([[Result]], [[MState]])
+extractResults = foldr extractResults' ([], [])
+ where
+   extractResults' :: [MState] -> ([[Result]], [[MState]]) -> ([[Result]], [[MState]])
+   extractResults' [] (rss, mss) = (rss, mss)
+   extractResults' (MState [] rs:ms) (rss, mss) = extractResults' ms (rs:rss, mss)
+   extractResults' ms (rss, mss) = (rss, ms:mss)
+
+processMStates :: [MState] -> [[MState]]
+processMStates []          = []
+processMStates (mstate:ms) = [processMState mstate, ms]
 
 processMState :: MState -> [MState]
 processMState (MState (MAtom Wildcard something t:atoms) rs) = [MState atoms rs]
@@ -106,11 +117,21 @@ processMState (MState (MAtom p (Matcher m) t:atoms) rs) =
 matchAll :: a -> Matcher a -> [(Pattern a, [Result] -> b)] -> [b]
 matchAll tgt matcher =
   foldr (\(pat, f) matches ->
-    let resultss = processMStates [MState [MAtom pat matcher tgt] []] in
+    let resultss = processMStatesAll [[MState [MAtom pat matcher tgt] []]] in
         map f resultss ++ matches) []
 
 match :: a -> Matcher a -> [(Pattern a, [Result] -> b)] -> b
 match t m xs = head $ matchAll t m xs
+
+--
+-- my functions
+--
+
+mymap :: Eq a => (a -> b) -> [a] -> [b]
+mymap f xs = matchAll xs (list something) [(JoinPat Wildcard (ConsPat (PatVar "x") Wildcard), \[Result x] -> let x' = unsafeCoerce x in f x')]
+
+myconcat :: Eq a => [[a]] -> [a]
+myconcat xs = matchAll xs (multiset (multiset something)) [(ConsPat (ConsPat (PatVar "x") Wildcard) Wildcard, \[Result x] -> let x' = unsafeCoerce x in x')]
 
 
 main :: IO ()
@@ -129,7 +150,7 @@ main = do
   assert (take 10 twinprimes == [(3,5),(5,7),(11,13),(17,19),(29,31),(41,43),(59,61),(71,73),(101,103),(107,109)]) $ print "ok 2"
 
   -- multiset
-  let xss1 = matchAll [1,2,5,9,4] (multiset integer) [(ConsPat (PatVar "x") (PatVar "xs"), \[Result x, Result xs] -> let x = unsafeCoerce x in let xs = unsafeCoerce xs in (x, xs))]
+  let xss1 = matchAll [1,2,5,9,4] (multiset integer) [(ConsPat (PatVar "x") (PatVar "xs"), \[Result x, Result xs] -> let x' = unsafeCoerce x in let xs' = unsafeCoerce xs in (x', xs'))]
   assert (xss1 == [(1,[2,5,9,4]),(2,[1,5,9,4]),(5,[1,2,9,4]),(9,[1,2,5,4]),(4,[1,2,5,9])]) $ print "ok 3"
 
   -- value, and, or, not pattern
@@ -139,5 +160,15 @@ main = do
   -- later pattern
   let xss3 = match [1..5] (list integer) [(ConsPat (LaterPat (LambdaPat (\[Result p, _] -> let p = unsafeCoerce p in p - 1))) (ConsPat (PatVar "x") (PatVar "xs")), \[Result x, Result xs] -> let x = unsafeCoerce x in let xs = unsafeCoerce xs in (x, xs))]
   assert (xss3 == (2,[3,4,5])) $ print "ok 5"
+
+  -- check order
+  let xss4 = matchAll [1..] (multiset integer) [(ConsPat (PatVar "x") (ConsPat (PatVar "y") Wildcard), \[Result x, Result y] -> let x' = unsafeCoerce x in let y' = unsafeCoerce y in (x', y') :: (Integer, Integer))]
+  assert (take 10 xss4 == [(1,2),(1,3),(2,1),(1,4),(2,3),(3,1),(1,5),(2,4),(3,2),(4,1)]) $ print "ok 6"
+
+  -- map
+  assert (mymap (+ 10) [1,2,3] == [11, 12, 13]) $ print "ok mymap"
+
+  -- concat
+  assert (myconcat [[1,2], [3], [4, 5]] == [1..5]) $ print "ok myconcat"
 
   return ()
