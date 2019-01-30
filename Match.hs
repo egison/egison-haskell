@@ -16,7 +16,7 @@ data Result = forall a. Result a
 data Matcher a = Something | Matcher (Pattern a -> a -> [[MAtom]])
 
 --
--- pattern
+-- Patterns
 --
 
 data family Pattern a
@@ -37,7 +37,7 @@ data instance Pattern a :: * where
   JoinPat :: a ~ [b] => Pattern a -> Pattern a -> Pattern a
 
 --
--- matcher
+-- Matchers
 --
 
 something :: Matcher a
@@ -81,7 +81,7 @@ unjoin []     = [([], [])]
 unjoin (x:xs) = ([], x:xs) : map (\(hs,ts) -> (x:hs, ts)) (unjoin xs)
 
 --
--- match
+-- Pattern-matching algorithm
 --
 
 processMStatesAll :: [[MState]] -> [[Result]]
@@ -124,52 +124,67 @@ match :: a -> Matcher a -> [(Pattern a, [Result] -> b)] -> b
 match t m xs = head $ matchAll t m xs
 
 --
--- pattern-matching-oriented programming
+-- Basic list processing functions in pattern-matching-oriented programming style
 --
 
 pmMap :: (a -> b) -> [a] -> [b]
-pmMap f xs = matchAll xs (list something) [(JoinPat Wildcard (ConsPat (PatVar "x") Wildcard), \[Result x] -> let x' = unsafeCoerce x in f x')]
+pmMap f xs = matchAll xs (list something)
+               [(JoinPat Wildcard (ConsPat (PatVar "x") Wildcard),
+                \[Result x] -> let x' = unsafeCoerce x in f x')]
 
 pmConcat :: [[a]] -> [a]
-pmConcat xs = matchAll xs (multiset (multiset something)) [(ConsPat (ConsPat (PatVar "x") Wildcard) Wildcard, \[Result x] -> let x' = unsafeCoerce x in x')]
+pmConcat xss = matchAll xss (multiset (multiset something))
+                 [(ConsPat (ConsPat (PatVar "x") Wildcard) Wildcard,
+                  \[Result x] -> let x' = unsafeCoerce x in x')]
 
 pmUniq :: Eq a => [a] -> [a]
-pmUniq xs = matchAll xs (list eql) [(JoinPat (LaterPat (NotPat (JoinPat Wildcard (ConsPat (LambdaPat (\[Result x] -> let x' = unsafeCoerce x in x')) Wildcard)))) (ConsPat (PatVar "x") Wildcard), \[Result x] -> let x' = unsafeCoerce x in x')]
+pmUniq xs = matchAll xs (list eql)
+              [(JoinPat (LaterPat (NotPat (JoinPat Wildcard (ConsPat (LambdaPat (\[Result x] -> let x' = unsafeCoerce x in x')) Wildcard)))) (ConsPat (PatVar "x") Wildcard),
+               \[Result x] -> let x' = unsafeCoerce x in x')]
 
 
 main :: IO ()
 main = do
-  let pat1 = Wildcard :: Pattern Integer
-  let pat2 = ConsPat Wildcard Wildcard :: Pattern [Integer]
-  let pat3 = ConsPat (ConsPat Wildcard Wildcard) Wildcard :: Pattern [[Integer]]
-  let patTwinPrimes = JoinPat Wildcard (ConsPat (PatVar "p") (ConsPat (LambdaPat (\[Result p] -> let p' = unsafeCoerce p in p' + 2)) Wildcard)) :: Pattern [Integer]
+  -- List cons pattern
+  let ret = match [1,2,5,9,4] (list integer)
+               [(ConsPat (PatVar "x") (PatVar "xs"),
+                \[Result x, Result xs] -> let x' = unsafeCoerce x in let xs' = unsafeCoerce xs in (x', xs'))]
+  assert (ret == (1, [2,5,9,4])) $ print "ok 1"
 
-  -- list
-  let xss0 = match [1,2,5,9,4] (list integer) [(ConsPat (PatVar "x") (PatVar "xs"), \[Result x, Result xs] -> let x' = unsafeCoerce x in let xs' = unsafeCoerce xs in (x', xs'))]
-  assert (xss0 == (1, [2,5,9,4])) $ print "ok 1"
+  -- Multiset cons pattern
+  let ret = matchAll [1,2,5,9,4] (multiset integer)
+               [(ConsPat (PatVar "x") (PatVar "xs"),
+                \[Result x, Result xs] -> let x' = unsafeCoerce x in let xs' = unsafeCoerce xs in (x', xs'))]
+  assert (ret == [(1,[2,5,9,4]),(2,[1,5,9,4]),(5,[1,2,9,4]),(9,[1,2,5,4]),(4,[1,2,5,9])]) $ print "ok 2"
+  
+  -- Twin primes (pattern matching with infinitely many results)
+  let ret = matchAll primes (list integer)
+              [(JoinPat Wildcard (ConsPat (PatVar "p") (ConsPat (LambdaPat (\[Result p] -> let p' = unsafeCoerce p in p' + 2)) Wildcard)),
+               \[Result p] -> let p' = unsafeCoerce p in (p', p' + 2))]
+  assert (take 10 ret == [(3,5),(5,7),(11,13),(17,19),(29,31),(41,43),(59,61),(71,73),(101,103),(107,109)]) $ print "ok 3"
 
-  -- infinite target
-  let twinprimes = matchAll primes (list integer) [(patTwinPrimes, \[Result p] -> let p' = unsafeCoerce p in (p', p' + 2))]
-  assert (take 10 twinprimes == [(3,5),(5,7),(11,13),(17,19),(29,31),(41,43),(59,61),(71,73),(101,103),(107,109)]) $ print "ok 2"
+  -- Value patterns, and-patterns, or-patterns, and  not-patterns
+  let ret = matchAll [1,2,5,9,4] (multiset integer)
+              [(ConsPat (AndPat (NotPat (ValuePat 5)) (PatVar "x")) (ConsPat (AndPat (OrPat (ValuePat 1) (ValuePat 2)) (PatVar "y")) (PatVar "xs")),
+               \[Result x, Result y, Result xs] -> let x' = unsafeCoerce x in let y' = unsafeCoerce y in let xs' = unsafeCoerce xs in (x', y', xs'))]
+  assert (ret == [(1,2,[5,9,4]),(2,1,[5,9,4]),(9,1,[2,5,4]),(9,2,[1,5,4]),(4,1,[2,5,9]),(4,2,[1,5,9])]) $ print "ok 4"
 
-  -- multiset
-  let xss1 = matchAll [1,2,5,9,4] (multiset integer) [(ConsPat (PatVar "x") (PatVar "xs"), \[Result x, Result xs] -> let x' = unsafeCoerce x in let xs' = unsafeCoerce xs in (x', xs'))]
-  assert (xss1 == [(1,[2,5,9,4]),(2,[1,5,9,4]),(5,[1,2,9,4]),(9,[1,2,5,4]),(4,[1,2,5,9])]) $ print "ok 3"
+  -- Later pattern
+  let ret = match [1..5] (list integer)
+              [(ConsPat (LaterPat (LambdaPat (\[Result p, _] -> let p' = unsafeCoerce p in p' - 1))) (ConsPat (PatVar "x") (PatVar "xs")),
+               \[Result x, Result xs] -> let x' = unsafeCoerce x in let xs' = unsafeCoerce xs in (x', xs'))]
+  assert (ret == (2,[3,4,5])) $ print "ok 5"
 
-  -- value, and, or, not pattern
-  let xss2 = matchAll [1,2,5,9,4] (multiset integer) [(ConsPat (AndPat (NotPat (ValuePat 5)) (PatVar "x")) (ConsPat (AndPat (OrPat (ValuePat 1) (ValuePat 2)) (PatVar "y")) (PatVar "xs")), \[Result x, Result y, Result xs] -> let x' = unsafeCoerce x in let y' = unsafeCoerce y in let xs' = unsafeCoerce xs in (x', y', xs'))]
-  assert (xss2 == [(1,2,[5,9,4]),(2,1,[5,9,4]),(9,1,[2,5,4]),(9,2,[1,5,4]),(4,1,[2,5,9]),(4,2,[1,5,9])]) $ print "ok 4"
+  -- Check the order of pattern-matching results
+  let ret = matchAll [1..] (multiset integer)
+              [(ConsPat (PatVar "x") (ConsPat (PatVar "y") Wildcard),
+               \[Result x, Result y] -> let x' = unsafeCoerce x in let y' = unsafeCoerce y in (x', y'))]
+  assert (take 10 ret == [(1,2),(1,3),(2,1),(1,4),(2,3),(3,1),(1,5),(2,4),(3,2),(4,1)]) $ print "ok 6"
 
-  -- later pattern
-  let xss3 = match [1..5] (list integer) [(ConsPat (LaterPat (LambdaPat (\[Result p, _] -> let p' = unsafeCoerce p in p' - 1))) (ConsPat (PatVar "x") (PatVar "xs")), \[Result x, Result xs] -> let x' = unsafeCoerce x in let xs' = unsafeCoerce xs in (x', xs'))]
-  assert (xss3 == (2,[3,4,5])) $ print "ok 5"
-
-  -- check order
-  let xss4 = matchAll [1..] (multiset integer) [(ConsPat (PatVar "x") (ConsPat (PatVar "y") Wildcard), \[Result x, Result y] -> let x' = unsafeCoerce x in let y' = unsafeCoerce y in (x', y'))]
-  assert (take 10 xss4 == [(1,2),(1,3),(2,1),(1,4),(2,3),(3,1),(1,5),(2,4),(3,2),(4,1)]) $ print "ok 6"
-
-  -- predicate pattern
-  assert (matchAll [1..10] (multiset integer) [(ConsPat (AndPat (PredicatePat (\x -> mod x 2 == 0)) (PatVar "x")) Wildcard, \[Result x] -> unsafeCoerce x :: Integer)] == [2,4,6,8]) $ print "ok 7"
+  -- Predicate patterns
+  assert (matchAll [1..10] (multiset integer)
+           [(ConsPat (AndPat (PredicatePat (\x -> mod x 2 == 0)) (PatVar "x")) Wildcard,
+            \[Result x] -> unsafeCoerce x :: Integer)] == [2,4,6,8]) $ print "ok 7"
 
   -- map, concat, uniq
   assert (pmMap (+ 10) [1,2,3] == [11, 12, 13]) $ print "ok map"
