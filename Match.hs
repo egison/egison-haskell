@@ -42,35 +42,33 @@ data instance Pattern a :: * where
 something :: Matcher a
 something = Something
 
-eqM :: Eq a => Matcher a
-eqM = Matcher eqM'
+eql :: Eq a => Matcher a
+eql = Matcher eql'
 
-eqM' :: Eq a => Pattern a -> a -> [[MAtom]]
-eqM' p@Wildcard t   = [[MAtom p something t]]
-eqM' p@(PatVar _) t = [[MAtom p something t]]
-eqM' (ValuePat v) t = [[] | v == t]
+eql' :: Eq a => Pattern a -> a -> [[MAtom]]
+eql' p@Wildcard t   = [[MAtom p something t]]
+eql' p@(PatVar _) t = [[MAtom p something t]]
+eql' (ValuePat v) t = [[] | v == t]
 
-integer = eqM
+integer = eql
 
-list :: Eq a => Matcher a -> Matcher [a]
+list :: Matcher a -> Matcher [a]
 list m = Matcher (list' m)
 
-list' :: Eq a => Matcher a -> Pattern [a] -> [a] -> [[MAtom]]
+list' :: Matcher a -> Pattern [a] -> [a] -> [[MAtom]]
 list' _ p@Wildcard t = [[MAtom p something t]]
 list' _ p@(PatVar _) t = [[MAtom p something t]]
-list' _ (ValuePat v) t = [[] | v == t]
 list' _ NilPat t = [[] | null t]
 list' _ (ConsPat _ _) [] = []
 list' m (ConsPat p1 p2) (t:ts) = [[MAtom p1 m t, MAtom p2 (list m) ts]]
 list' m (JoinPat p1 p2) t = map (\(hs, ts) -> [MAtom p1 (list m) hs, MAtom p2 (list m) ts]) (unjoin t)
 
-multiset :: Eq a => Matcher a -> Matcher [a]
+multiset :: Matcher a -> Matcher [a]
 multiset m = Matcher (multiset' m)
 
-multiset' :: Eq a => Matcher a -> Pattern [a] -> [a] -> [[MAtom]]
+multiset' :: Matcher a -> Pattern [a] -> [a] -> [[MAtom]]
 multiset' _ p@Wildcard t = [[MAtom p something t]]
 multiset' _ p@(PatVar _) t = [[MAtom p something t]]
-multiset' _ (ValuePat v) t = [[] | v == t]
 multiset' _ NilPat t = [[] | null t]
 multiset' m (ConsPat p1 p2) t =
   map (\(x, xs) -> [MAtom p1 m x, MAtom p2 (multiset m) xs])
@@ -109,7 +107,7 @@ processMState (MState (MAtom (LambdaPat f) (Matcher m) t:atoms) rs) =
       map (\nt -> MState (nt ++ atoms) rs) next
 processMState (MState (MAtom (AndPat p1 p2) m t:atoms) rs) = [MState (MAtom p1 m t:MAtom p2 m t:atoms) rs]
 processMState (MState (MAtom (OrPat p1 p2) m t:atoms) rs) = [MState (MAtom p1 m t:atoms) rs, MState (MAtom p2 m t:atoms) rs]
-processMState (MState (MAtom (NotPat p) m t:atoms) rs) = [MState atoms rs | null $ processMStates [MState [MAtom p m t] rs]]
+processMState (MState (MAtom (NotPat p) m t:atoms) rs) = [MState atoms rs | null $ processMStatesAll [[MState [MAtom p m t] rs]]]
 processMState (MState (MAtom (LaterPat p) m t:atoms) rs) = [MState (atoms ++ [MAtom p m t]) rs]
 processMState (MState (MAtom p (Matcher m) t:atoms) rs) =
   map (\newAtoms -> MState (newAtoms ++ atoms) rs) (m p t)
@@ -124,14 +122,17 @@ match :: a -> Matcher a -> [(Pattern a, [Result] -> b)] -> b
 match t m xs = head $ matchAll t m xs
 
 --
--- my functions
+-- pattern-matching-oriented programming
 --
 
-mymap :: Eq a => (a -> b) -> [a] -> [b]
-mymap f xs = matchAll xs (list something) [(JoinPat Wildcard (ConsPat (PatVar "x") Wildcard), \[Result x] -> let x' = unsafeCoerce x in f x')]
+pmMap :: (a -> b) -> [a] -> [b]
+pmMap f xs = matchAll xs (list something) [(JoinPat Wildcard (ConsPat (PatVar "x") Wildcard), \[Result x] -> let x' = unsafeCoerce x in f x')]
 
-myconcat :: Eq a => [[a]] -> [a]
-myconcat xs = matchAll xs (multiset (multiset something)) [(ConsPat (ConsPat (PatVar "x") Wildcard) Wildcard, \[Result x] -> let x' = unsafeCoerce x in x')]
+pmConcat :: [[a]] -> [a]
+pmConcat xs = matchAll xs (multiset (multiset something)) [(ConsPat (ConsPat (PatVar "x") Wildcard) Wildcard, \[Result x] -> let x' = unsafeCoerce x in x')]
+
+pmUniq :: Eq a => [a] -> [a]
+pmUniq xs = matchAll xs (list eql) [(JoinPat (LaterPat (NotPat (JoinPat Wildcard (ConsPat (LambdaPat (\[Result x] -> let x' = unsafeCoerce x in x')) Wildcard)))) (ConsPat (PatVar "x") Wildcard), \[Result x] -> let x' = unsafeCoerce x in x')]
 
 
 main :: IO ()
@@ -139,7 +140,7 @@ main = do
   let pat1 = Wildcard :: Pattern Integer
   let pat2 = ConsPat Wildcard Wildcard :: Pattern [Integer]
   let pat3 = ConsPat (ConsPat Wildcard Wildcard) Wildcard :: Pattern [[Integer]]
-  let patTwinPrimes = JoinPat Wildcard (ConsPat (PatVar "p") (ConsPat (LambdaPat (\[Result p] ->let p = unsafeCoerce p in p + 2)) Wildcard)) :: Pattern [Integer]
+  let patTwinPrimes = JoinPat Wildcard (ConsPat (PatVar "p") (ConsPat (LambdaPat (\[Result p] -> let p = unsafeCoerce p in p + 2)) Wildcard)) :: Pattern [Integer]
 
   -- list
   let xss0 = match [1,2,5,9,4] (list integer) [(ConsPat (PatVar "x") (PatVar "xs"), \[Result x, Result xs] -> let x = unsafeCoerce x in let xs = unsafeCoerce xs in (x, xs))]
@@ -165,10 +166,9 @@ main = do
   let xss4 = matchAll [1..] (multiset integer) [(ConsPat (PatVar "x") (ConsPat (PatVar "y") Wildcard), \[Result x, Result y] -> let x' = unsafeCoerce x in let y' = unsafeCoerce y in (x', y') :: (Integer, Integer))]
   assert (take 10 xss4 == [(1,2),(1,3),(2,1),(1,4),(2,3),(3,1),(1,5),(2,4),(3,2),(4,1)]) $ print "ok 6"
 
-  -- map
-  assert (mymap (+ 10) [1,2,3] == [11, 12, 13]) $ print "ok mymap"
-
-  -- concat
-  assert (myconcat [[1,2], [3], [4, 5]] == [1..5]) $ print "ok myconcat"
+  -- map, concat, uniq
+  assert (pmMap (+ 10) [1,2,3] == [11, 12, 13]) $ print "ok map"
+  assert (pmConcat [[1,2], [3], [4, 5]] == [1..5]) $ print "ok concat"
+  assert (pmUniq [1,1,2,3,2] == [1,2,3]) $ print "ok uniq"
 
   return ()
