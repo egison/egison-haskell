@@ -156,14 +156,14 @@ main = do
                [(ConsPat (PatVar "x") (PatVar "xs"),
                 \[Result x, Result xs] -> let x' = unsafeCoerce x in let xs' = unsafeCoerce xs in (x', xs'))]
   assert (ret == [(1,[2,5,9,4]),(2,[1,5,9,4]),(5,[1,2,9,4]),(9,[1,2,5,4]),(4,[1,2,5,9])]) $ print "ok 2"
-  
+
   -- Twin primes (pattern matching with infinitely many results)
   let ret = matchAll primes (list integer)
               [(JoinPat Wildcard (ConsPat (PatVar "p") (ConsPat (LambdaPat (\[Result p] -> let p' = unsafeCoerce p in p' + 2)) Wildcard)),
                \[Result p] -> let p' = unsafeCoerce p in (p', p' + 2))]
   assert (take 10 ret == [(3,5),(5,7),(11,13),(17,19),(29,31),(41,43),(59,61),(71,73),(101,103),(107,109)]) $ print "ok 3"
 
-  -- Value patterns, and-patterns, or-patterns, and  not-patterns
+  -- Value patterns, and-patterns, or-patterns, and not-patterns
   let ret = matchAll [1,2,5,9,4] (multiset integer)
               [(ConsPat (AndPat (NotPat (ValuePat 5)) (PatVar "x")) (ConsPat (AndPat (OrPat (ValuePat 1) (ValuePat 2)) (PatVar "y")) (PatVar "xs")),
                \[Result x, Result y, Result xs] -> let x' = unsafeCoerce x in let y' = unsafeCoerce y in let xs' = unsafeCoerce xs in (x', y', xs'))]
