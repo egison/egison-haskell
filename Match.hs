@@ -3,15 +3,16 @@
 {-# LANGUAGE KindSignatures            #-}
 {-# LANGUAGE TypeFamilies              #-}
 
+
 module Match (
-  Matcher(..),
+  MState(..),
+  MAtom(..),
   Result(..),
+  Matcher(..),
   Pattern(..),
-  extractPatVars,
   list,
   multiset,
   integer,
-  assert,
   matchAll,
   match,
   pmMap,
@@ -19,7 +20,6 @@ module Match (
   pmUniq,
              ) where
 
-import           Control.Exception.Assert
 import           Data.List
 import           Data.Maybe
 import           Prelude
@@ -50,16 +50,6 @@ data instance Pattern a :: * where
   NilPat :: a ~ [b] => Pattern a
   ConsPat :: a ~ [b] => Pattern b -> Pattern a -> Pattern a
   JoinPat :: a ~ [b] => Pattern a -> Pattern a -> Pattern a
-
-extractPatVars :: Pattern a -> [String]
-extractPatVars (PatVar s)      = [s]
-extractPatVars (AndPat p1 p2)  = extractPatVars p1 ++ extractPatVars p2
-extractPatVars (OrPat p1 p2)   = extractPatVars p1 ++ extractPatVars p2
-extractPatVars (NotPat p)      = extractPatVars p
-extractPatVars (LaterPat p)    = extractPatVars p
-extractPatVars (ConsPat p1 p2) = extractPatVars p1 ++ extractPatVars p2
-extractPatVars (JoinPat p1 p2) = extractPatVars p1 ++ extractPatVars p2
-extractPatVars _               = []
 
 --
 -- Matchers

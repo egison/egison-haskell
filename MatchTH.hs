@@ -1,8 +1,6 @@
-{-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE QuasiQuotes #-}
 
-module MatchTH ( makeExprQ ) where
+module MatchTH ( makeExprQ, extractPatVars ) where
 
 import           Data.List
 import           Data.Map            (Map)
@@ -12,16 +10,15 @@ import           Match
 import           Unsafe.Coerce
 import           Useful.Dictionary
 
-makeExprQ :: [String] -> ExpQ -> ExpQ
+makeExprQ :: [String] -> Exp -> ExpQ
 makeExprQ vars expr = do
   vars' <- mapM newName vars
   vars'' <- mapM (\s -> newName $ s ++ "'") vars
   lamE [listP $ map (\x -> conP 'Result [varP x]) vars']
-    $ foldr (\(x, x') acc -> letE [valD (varP x') (normalB (appE (varE 'unsafeCoerce) (varE x))) []] acc) (changeExp (dict $ zip vars vars'') <$> expr) $ zip vars' vars''
+    $ foldr (\(x, x') acc -> letE [valD (varP x') (normalB (appE (varE 'unsafeCoerce) (varE x))) []] acc) (return $ changeExp (dict $ zip vars vars'') expr) $ zip vars' vars''
 
 changeExp :: Map String Name -> Exp -> Exp
 changeExp dct (VarE name) = VarE $ changeName dct name
-changeExp dct (ConE name) = ConE $ changeName dct name
 changeExp dct (AppE e1 e2) = AppE (changeExp dct e1) (changeExp dct e1)
 -- changeExp dct (AppTypeE e t) = AppTypeE (changeExp dct e) t
 changeExp dct (InfixE me1 e me2) = InfixE (fmap (changeExp dct) me1) e (fmap (changeExp dct) me2)
@@ -45,3 +42,15 @@ changeExp _ e = e
 
 changeName :: Map String Name -> Name -> Name
 changeName dct name = fromMaybe name $ nameBase name #! dct
+
+extractPatVars :: Exp -> [String]
+extractPatVars (AppE (ConE name) p)
+  | name == 'PatVar = case p of (LitE (StringL s)) -> [s]
+  | name == 'NotPat = extractPatVars p
+  | name == 'LaterPat = extractPatVars p
+extractPatVars (AppE (AppE (ConE name) p1) p2)
+  | name == 'AndPat = extractPatVars p1 ++ extractPatVars p2
+  | name == 'OrPat = extractPatVars p1 ++ extractPatVars p2
+  | name == 'ConsPat = extractPatVars p1 ++ extractPatVars p2
+  | name == 'JoinPat = extractPatVars p1 ++ extractPatVars p2
+extractPatVars _               = []

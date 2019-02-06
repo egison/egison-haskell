@@ -3,10 +3,12 @@
 
 module Main (main) where
 
+import           Control.Exception.Assert
 import           Data.Numbers.Primes
-import           Language.Haskell.TH hiding (match)
+import           Language.Haskell.TH      hiding (match)
 import           Match
 import           MatchTH
+import           MatchTH2
 import           Unsafe.Coerce
 
 
@@ -26,8 +28,7 @@ main = do
 
   -- Twin primes (pattern matching with infinitely many results)
   let ret = matchAll primes (list integer)
-              [(JoinPat Wildcard (ConsPat (PatVar "p") (ConsPat (LambdaPat (\[Result p] -> let p' = unsafeCoerce p in p' + 2)) Wildcard)),
-               \[Result p] -> let p' = unsafeCoerce p in (p', p' + 2))]
+              $(f [e| [(JoinPat Wildcard (ConsPat (PatVar "p") (ConsPat (LambdaPat (\[Result p] -> let p' = unsafeCoerce p in p' + 2)) Wildcard)), (p, p + 2))] |])
   assert (take 10 ret == [(3,5),(5,7),(11,13),(17,19),(29,31),(41,43),(59,61),(71,73),(101,103),(107,109)]) $ print "ok 3"
 
   -- Value patterns, and-patterns, or-patterns, and not-patterns
@@ -59,6 +60,6 @@ main = do
   assert (pmUniq [1,1,2,3,2] == [1,2,3]) $ print "ok uniq"
 
   -- template-haskell
-  print (matchAll [1,2,3] (list integer) [(ConsPat (PatVar "x") (ConsPat (PatVar "y") Wildcard), $(MatchTH.makeExprQ ["x", "y"] [e| (x, y) |]))] :: [(Integer, Integer)])
+  print (matchAll [1,2,3] (list integer) $(f [e| [(ConsPat (PatVar "x") (ConsPat (PatVar "y") Wildcard), (x, y) :: (Integer, Integer) )] |]))
 
   return ()
