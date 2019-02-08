@@ -18,8 +18,7 @@ import           Unsafe.Coerce
 
 pmMap :: (a -> b) -> [a] -> [b]
 pmMap f xs = matchAll xs (list something)
-               [(JoinPat Wildcard (ConsPat (PatVar "x") Wildcard),
-                \[Result x] -> let x' = unsafeCoerce x in f x')]
+               $(mc [e| [(JoinPat Wildcard (ConsPat (PatVar "x") Wildcard), f x)] |])
 
 pmConcat :: [[a]] -> [a]
 pmConcat xss = matchAll xss (multiset (multiset something))
@@ -71,7 +70,5 @@ main = do
   assert (pmConcat [[1,2], [3], [4, 5]] == [1..5]) $ print "ok concat"
   assert (pmUniq [1,1,2,3,2] == [1,2,3]) $ print "ok uniq"
 
-  -- template-haskell
-  print (matchAll [1,2,3] (list integer) $(mc [e| [(ConsPat (PatVar "x") (ConsPat (PatVar "y") Wildcard), (x, y) :: (Integer, Integer) )] |]))
 
   return ()

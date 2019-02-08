@@ -24,7 +24,7 @@ makeExprQ vars expr = do
 
 changeExp :: Map String Name -> Exp -> Exp
 changeExp dct (VarE name) = VarE $ changeName dct name
-changeExp dct (AppE e1 e2) = AppE (changeExp dct e1) (changeExp dct e1)
+changeExp dct (AppE e1 e2) = AppE (changeExp dct e1) (changeExp dct e2)
 -- changeExp dct (AppTypeE e t) = AppTypeE (changeExp dct e) t
 changeExp dct (InfixE me1 e me2) = InfixE (fmap (changeExp dct) me1) e (fmap (changeExp dct) me2)
 changeExp dct (UInfixE e1 e2 e3) = UInfixE (changeExp dct e1) (changeExp dct e2) (changeExp dct e3)
