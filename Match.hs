@@ -10,14 +10,13 @@ module Match (
   Result(..),
   Matcher(..),
   Pattern(..),
+  something,
+  eql,
   list,
   multiset,
   integer,
   matchAll,
   match,
-  pmMap,
-  pmConcat,
-  pmUniq,
              ) where
 
 import           Data.List
@@ -39,8 +38,8 @@ data family Pattern a
 data instance Pattern a :: * where
   Wildcard  :: Pattern a
   PatVar    :: String -> Pattern a
-  LambdaPat :: Eq a => ([Result] -> a) -> Pattern a
-  ValuePat  :: Eq a => a -> Pattern a
+  ValuePat :: Eq a => ([Result] -> a) -> Pattern a
+  ValuePat'  :: Eq a => a -> Pattern a
   AndPat :: Pattern a -> Pattern a -> Pattern a
   OrPat :: Pattern a -> Pattern a -> Pattern a
   NotPat :: Pattern a -> Pattern a
@@ -62,9 +61,9 @@ eql :: Eq a => Matcher a
 eql = Matcher eql'
 
 eql' :: Eq a => Pattern a -> a -> [[MAtom]]
-eql' p@Wildcard t   = [[MAtom p something t]]
-eql' p@(PatVar _) t = [[MAtom p something t]]
-eql' (ValuePat v) t = [[] | v == t]
+eql' p@Wildcard t    = [[MAtom p something t]]
+eql' p@(PatVar _) t  = [[MAtom p something t]]
+eql' (ValuePat' v) t = [[] | v == t]
 
 integer :: Eq a => Matcher a
 integer = eql
@@ -119,8 +118,8 @@ processMStates (mstate:ms) = [processMState mstate, ms]
 processMState :: MState -> [MState]
 processMState (MState (MAtom Wildcard something t:atoms) rs) = [MState atoms rs]
 processMState (MState (MAtom (PatVar _) something t:atoms) rs) = [MState atoms (rs ++ [Result t])]
-processMState (MState (MAtom (LambdaPat f) (Matcher m) t:atoms) rs) =
-  let next = m (ValuePat $ f rs) t in
+processMState (MState (MAtom (ValuePat f) (Matcher m) t:atoms) rs) =
+  let next = m (ValuePat' $ f rs) t in
       map (\nt -> MState (nt ++ atoms) rs) next
 processMState (MState (MAtom (AndPat p1 p2) m t:atoms) rs) = [MState (MAtom p1 m t:MAtom p2 m t:atoms) rs]
 processMState (MState (MAtom (OrPat p1 p2) m t:atoms) rs) = [MState (MAtom p1 m t:atoms) rs, MState (MAtom p2 m t:atoms) rs]
@@ -137,22 +136,3 @@ matchAll tgt matcher =
 
 match :: a -> Matcher a -> [(Pattern a, [Result] -> b)] -> b
 match t m xs = head $ matchAll t m xs
-
---
--- Basic list processing functions in pattern-matching-oriented programming style
---
-
-pmMap :: (a -> b) -> [a] -> [b]
-pmMap f xs = matchAll xs (list something)
-               [(JoinPat Wildcard (ConsPat (PatVar "x") Wildcard),
-                \[Result x] -> let x' = unsafeCoerce x in f x')]
-
-pmConcat :: [[a]] -> [a]
-pmConcat xss = matchAll xss (multiset (multiset something))
-                 [(ConsPat (ConsPat (PatVar "x") Wildcard) Wildcard,
-                  \[Result x] -> let x' = unsafeCoerce x in x')]
-
-pmUniq :: Eq a => [a] -> [a]
-pmUniq xs = matchAll xs (list eql)
-              [(JoinPat (LaterPat (NotPat (JoinPat Wildcard (ConsPat (LambdaPat (\[Result x] -> let x' = unsafeCoerce x in x')) Wildcard)))) (ConsPat (PatVar "x") Wildcard),
-               \[Result x] -> let x' = unsafeCoerce x in x')]

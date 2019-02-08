@@ -1,6 +1,11 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections   #-}
 
-module MatchTH ( makeExprQ, extractPatVars ) where
+module MatchTH (
+  makeExprQ,
+  extractPatVars,
+  changePat,
+               ) where
 
 import           Data.List
 import           Data.Map            (Map)
@@ -43,14 +48,40 @@ changeExp _ e = e
 changeName :: Map String Name -> Name -> Name
 changeName dct name = fromMaybe name $ nameBase name #! dct
 
-extractPatVars :: Exp -> [String]
-extractPatVars (AppE (ConE name) p)
-  | name == 'PatVar = case p of (LitE (StringL s)) -> [s]
-  | name == 'NotPat = extractPatVars p
-  | name == 'LaterPat = extractPatVars p
-extractPatVars (AppE (AppE (ConE name) p1) p2)
-  | name == 'AndPat = extractPatVars p1 ++ extractPatVars p2
-  | name == 'OrPat = extractPatVars p1 ++ extractPatVars p2
-  | name == 'ConsPat = extractPatVars p1 ++ extractPatVars p2
-  | name == 'JoinPat = extractPatVars p1 ++ extractPatVars p2
-extractPatVars _               = []
+extractPatVars :: [Exp] -> [String] -> ([String], [Int])
+extractPatVars [] vars = (vars, [])
+extractPatVars (AppE (ConE name) p:xs) vars
+  | name == 'PatVar = case p of (LitE (StringL s)) -> extractPatVars xs (vars ++ [s])
+  | name == 'ValuePat = let (vs, ns) = extractPatVars xs vars in (vs, length vars:ns)
+  | name == 'NotPat = extractPatVars (p:xs) vars
+  | name == 'LaterPat =
+      let (vs1, ns1) = extractPatVars xs vars in
+      let (vs2, ns2) = extractPatVars [p] vs1 in (vs2, ns2 ++ ns1)
+extractPatVars (AppE (AppE (ConE name) p1) p2:xs) vars
+  | name `elem` ['AndPat, 'OrPat, 'ConsPat, 'JoinPat] = extractPatVars (p1:p2:xs) vars
+extractPatVars (InfixE (Just (ConE name)) (VarE op) (Just p):xs) vars = extractPatVars (AppE (ConE name) p:xs) vars
+extractPatVars (_:xs) vars = extractPatVars xs vars
+
+changePat :: Exp -> [[String]] -> Q (Exp, [[String]])
+changePat e@(AppE (ConE name) p) vs
+  | name == 'ValuePat = do
+      let (vars:varss) = vs
+      vars' <- mapM newName vars
+      vars'' <- mapM (\s -> newName $ s ++ "'") vars
+      (, varss) <$> appE (conE 'ValuePat) (lamE [listP $ map (\x -> conP 'Result [varP x]) vars']
+        $ foldr (\(x, x') acc -> letE [valD (varP x') (normalB (appE (varE 'unsafeCoerce) (varE x))) []] acc) (return $ changeExp (dict $ zip vars vars'') p) $ zip vars' vars'')
+  | name == 'NotPat = do
+      (e', vs') <- changePat p vs
+      (, vs') <$> appE (conE name) (return e')
+  | name == 'LaterPat = do
+      (e', vs') <- changePat p vs
+      (, vs') <$> appE (conE name) (return e')
+  | otherwise = return (e, vs)
+changePat e@(AppE (AppE (ConE name) p1) p2) vs
+  | name `elem` ['AndPat, 'OrPat, 'ConsPat, 'JoinPat] = do
+      (e1, vs1) <- changePat p1 vs
+      (e2, vs2) <- changePat p2 vs1
+      (, vs2) <$> appE (appE (conE name) (return e1)) (return e2)
+  | otherwise = return (e, vs)
+changePat (InfixE (Just (ConE name)) (VarE op) (Just p)) vs = changePat (AppE (ConE name) p) vs
+changePat e vs = return (e, vs)
