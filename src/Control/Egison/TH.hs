@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections   #-}
 
-module MatchTH (
+module Control.Egison.TH (
   makeExprQ,
   extractPatVars,
   changePat,
@@ -11,7 +11,7 @@ import           Data.List
 import           Data.Map            (Map)
 import           Data.Maybe
 import           Language.Haskell.TH
-import           Match
+import           Control.Egison.Core
 import           Unsafe.Coerce
 import           Useful.Dictionary
 

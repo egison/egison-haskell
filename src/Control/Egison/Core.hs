@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeFamilies              #-}
 
 
-module Match (
+module Control.Egison.Core (
   MState(..),
   MAtom(..),
   Result(..),

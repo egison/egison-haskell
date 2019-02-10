@@ -5,12 +5,7 @@ module Main (main) where
 
 import           Control.Exception.Assert
 import           Data.Numbers.Primes
-import           Language.Haskell.TH      hiding (match)
-import           Match
-import           MatchTH
-import           MatchTH2
-import           Unsafe.Coerce
-
+import           Control.Egison
 
 --
 -- Basic list processing functions in pattern-matching-oriented programming style

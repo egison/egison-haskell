@@ -2,12 +2,12 @@
 {-# LANGUAGE QuasiQuotes      #-}
 {-# LANGUAGE TemplateHaskell  #-}
 
-module MatchTH2 ( mc ) where
+module Control.Egison.Match ( mc ) where
 
 import           Language.Haskell.TH        hiding (match)
 import           Language.Haskell.TH.Syntax
-import           Match
-import           MatchTH
+import           Control.Egison.Core
+import           Control.Egison.TH
 
 mc :: ExpQ -> ExpQ
 mc e = do
