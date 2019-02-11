@@ -53,6 +53,7 @@ Library
                    Control.Egison.Core
                    Control.Egison.TH
                    Control.Egison.Match
+                   Control.Egison.Matcher
   default-language:    Haskell2010
 
 executable egison-haskell
