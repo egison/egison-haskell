@@ -18,6 +18,10 @@ import           Data.List
 import           Data.Maybe
 import           Prelude
 
+--
+-- Matching states
+--
+
 data MState = MState [MAtom] [Result]
 data MAtom = forall a. MAtom (Pattern a) (Matcher a) a
 data Result = forall a. Result a
@@ -30,9 +34,7 @@ something = Something
 -- Patterns
 --
 
-data family Pattern a
-
-data instance Pattern a :: * where
+data Pattern a where
   Wildcard  :: Pattern a
   PatVar    :: String -> Pattern a
   ValuePat :: Eq a => ([Result] -> a) -> Pattern a
