@@ -46,11 +46,12 @@ extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
 Library
-  Build-Depends:   base >=4.9 && <4.10, assert, primes, Useful, containers, template-haskell
+  Build-Depends:   base >=4.9 && <4.10, Useful, containers, template-haskell, HList
   Hs-Source-Dirs:  src
   Exposed-Modules:
                    Control.Egison
                    Control.Egison.Core
+                   Control.Egison.TypedCore
                    Control.Egison.TH
                    Control.Egison.Match
                    Control.Egison.Matcher
@@ -60,14 +61,11 @@ executable egison-haskell
   -- .hs or .lhs file containing the Main module.
   main-is:             Main.hs
 
-  -- Modules included in this executable, other than Main.
---  other-modules:       Match, MatchTH, MatchTH2
-
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:
 
   -- Other library packages from which modules are imported.
-  build-depends:       egison-haskell, base >=4.9 && <4.10, assert, primes, Useful, containers, template-haskell
+  build-depends:       egison-haskell, base >=4.9 && <4.10, assert, primes
 
   -- Directories containing source files.
   -- hs-source-dirs:
