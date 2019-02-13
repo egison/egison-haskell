@@ -19,17 +19,17 @@ version:             0.1.0.0
 -- description:
 
 -- The license under which the package is released.
-license:             BSD3
+license:             MIT
 
 -- The file containing the license text.
 license-file:        LICENSE
 
 -- The package author(s).
-author:              kotapiku
+author:              kotapiku, Satoshi Egi
 
 -- An email address to which users can send suggestions, bug reports, and
 -- patches.
-maintainer:          ice08235523@gmail.com
+maintainer:          Satoshi Egi <egi@egison.org>
 
 -- A copyright notice.
 -- copyright:
