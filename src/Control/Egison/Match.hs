@@ -8,10 +8,10 @@ module Control.Egison.Match (
   match,
   ) where
 
-import           Language.Haskell.TH        hiding (match)
-import           Language.Haskell.TH.Syntax
 import           Control.Egison.Core
 import           Control.Egison.TH
+import           Language.Haskell.TH        hiding (match)
+import           Language.Haskell.TH.Syntax
 
 mc :: ExpQ -> ExpQ
 mc e = do

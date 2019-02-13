@@ -1,11 +1,11 @@
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE QuasiQuotes     #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Main (main) where
 
+import           Control.Egison
 import           Control.Exception.Assert
 import           Data.Numbers.Primes
-import           Control.Egison
 
 --
 -- Basic list processing functions in pattern-matching-oriented programming style

@@ -1,6 +1,5 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE GADTs                     #-}
-{-# LANGUAGE KindSignatures            #-}
 {-# LANGUAGE TypeFamilies              #-}
 
 

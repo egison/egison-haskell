@@ -1,17 +1,16 @@
+{-# LANGUAGE DataKinds                 #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE GADTs                     #-}
-{-# LANGUAGE KindSignatures            #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE TypeOperators             #-}
-{-# LANGUAGE DataKinds             #-}
 
 
 module Control.Egison.TypedCore (
 --  Pattern(..),
              ) where
 
-import           Data.List
 import           Data.HList.HList
+import           Data.List
 import           Data.Maybe
 import           Prelude
 
@@ -33,7 +32,7 @@ import           Prelude
 data Pattern a l1 l2 where
   Wildcard :: l1 ~ l2 => Pattern a (HList l1) (HList l2)
   PatVar   :: (a ': l1) ~ l2 => String -> Pattern a (HList l1) (HList l2)
-  ValuePat :: (l1 ~ l2, Eq a) => ((HList l1) -> a) -> Pattern a (HList l1) (HList l2)
+  ValuePat :: (l1 ~ l2, Eq a) => (HList l1 -> a) -> Pattern a (HList l1) (HList l2)
 
   NilPat :: (a ~ [b], l1 ~ l2) => Pattern a (HList l1) (HList l2)
   ConsPat :: a ~ [b] => Pattern b (HList l1) (HList l3) -> Pattern a (HList l3) (HList l2) -> Pattern a (HList l1) (HList l2)

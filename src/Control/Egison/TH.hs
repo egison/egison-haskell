@@ -7,11 +7,11 @@ module Control.Egison.TH (
   changePat,
                ) where
 
+import           Control.Egison.Core
 import           Data.List
 import           Data.Map            (Map)
 import           Data.Maybe
 import           Language.Haskell.TH
-import           Control.Egison.Core
 import           Unsafe.Coerce
 import           Useful.Dictionary
 
