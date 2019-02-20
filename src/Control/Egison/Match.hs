@@ -4,6 +4,7 @@
 
 module Control.Egison.Match (
   mc,
+  mcChange,
   matchAll,
   match,
   ) where
@@ -18,6 +19,12 @@ mc e = do
   (ListE [TupE [pat, expr]]) <- e
   let (vars, xs) = extractPatVars [pat] []
   [| [($(fst <$> changePat pat (map (`take` vars) xs)), $(makeExprQ vars expr))] |]
+
+mcChange :: ExpQ -> ExpQ
+mcChange e = do
+  (TupE [pat, expr]) <- e
+  let (vars, xs) = extractPatVars [pat] []
+  [| ($(fst <$> changePat pat (map (`take` vars) xs)), $(makeExprQ vars expr)) |]
 
 matchAll :: a -> Matcher a -> [(Pattern a, [Result] -> b)] -> [b]
 matchAll tgt matcher =

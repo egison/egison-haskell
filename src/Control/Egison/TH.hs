@@ -41,8 +41,8 @@ changeExp dct (ListE es) = ListE $ map (changeExp dct) es
 changeExp dct (SigE e t) = SigE (changeExp dct e) t
 changeExp dct (RecConE name fs) = RecConE (changeName dct name) fs
 changeExp dct (RecUpdE e fs) = RecUpdE (changeExp dct e) fs
-changeExp dct (StaticE e) = StaticE (changeExp dct e)
-changeExp dct (UnboundVarE name) = VarE (changeName dct name)
+changeExp dct (StaticE e) = StaticE $ changeExp dct e
+changeExp dct (UnboundVarE name) = VarE $ changeName dct name
 changeExp _ e = e
 
 changeName :: Map String Name -> Name -> Name
@@ -50,15 +50,16 @@ changeName dct name = fromMaybe name $ nameBase name #! dct
 
 extractPatVars :: [Exp] -> [String] -> ([String], [Int])
 extractPatVars [] vars = (vars, [])
+extractPatVars (ParensE x:xs) vars = extractPatVars (x:xs) vars
 extractPatVars (AppE (ConE name) p:xs) vars
-  | name == 'PatVar = case p of (LitE (StringL s)) -> extractPatVars xs (vars ++ [s])
-  | name == 'ValuePat = let (vs, ns) = extractPatVars xs vars in (vs, length vars:ns)
-  | name == 'NotPat = extractPatVars (p:xs) vars
-  | name == 'LaterPat =
+  | nameBase name == "PatVar" = case p of (LitE (StringL s)) -> extractPatVars xs (vars ++ [s])
+  | nameBase name == "ValuePat" = let (vs, ns) = extractPatVars xs vars in (vs, length vars:ns)
+  | nameBase name == "NotPat" = extractPatVars (p:xs) vars
+  | nameBase name == "LaterPat" =
       let (vs1, ns1) = extractPatVars xs vars in
       let (vs2, ns2) = extractPatVars [p] vs1 in (vs2, ns2 ++ ns1)
 extractPatVars (AppE (AppE (ConE name) p1) p2:xs) vars
-  | name `elem` ['AndPat, 'OrPat, 'ConsPat, 'JoinPat] = extractPatVars (p1:p2:xs) vars
+  | (nameBase name) `elem` ["AndPat", "OrPat", "ConsPat", "JoinPat"] = extractPatVars (p1:p2:xs) vars
 extractPatVars (InfixE (Just (ConE name)) (VarE op) (Just p):xs) vars = extractPatVars (AppE (ConE name) p:xs) vars
 extractPatVars (_:xs) vars = extractPatVars xs vars
 

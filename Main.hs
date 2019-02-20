@@ -26,6 +26,11 @@ pmUniq xs = matchAll xs (list eql)
 
 main :: IO ()
 main = do
+  let ret = match [1,2,5,9,4] (list integer)
+              [ [mc2| ConsPat (PatVar "x") (PatVar "xs") => (x, xs) |] ]
+              -- [ [mc2| ConsPat $x $xs => (x, xs) |] ]
+  assert (ret == (1, [2,5,9,4])) $ print "ok 1"
+
   -- List cons pattern
   let ret = match [1,2,5,9,4] (list integer)
               $(mc [e| [(ConsPat (PatVar "x") (PatVar "xs"), (x, xs))] |])
