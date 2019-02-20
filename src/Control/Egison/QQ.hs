@@ -2,7 +2,6 @@ module Control.Egison.QQ (mc2) where
 
 import           Control.Egison.Match
 import           Data.Strings
-import           Data.Text.ICU.Replace
 import           Language.Haskell.Meta
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Quote
