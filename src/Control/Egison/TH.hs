@@ -59,7 +59,7 @@ extractPatVars (AppE (ConE name) p:xs) vars
       let (vs1, ns1) = extractPatVars xs vars in
       let (vs2, ns2) = extractPatVars [p] vs1 in (vs2, ns2 ++ ns1)
 extractPatVars (AppE (AppE (ConE name) p1) p2:xs) vars
-  | (nameBase name) `elem` ["AndPat", "OrPat", "ConsPat", "JoinPat"] = extractPatVars (p1:p2:xs) vars
+  | nameBase name `elem` ["AndPat", "OrPat", "ConsPat", "JoinPat"] = extractPatVars (p1:p2:xs) vars
 extractPatVars (InfixE (Just (ConE name)) (VarE op) (Just p):xs) vars = extractPatVars (AppE (ConE name) p:xs) vars
 extractPatVars (_:xs) vars = extractPatVars xs vars
 

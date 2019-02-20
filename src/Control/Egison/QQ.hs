@@ -1,11 +1,11 @@
 module Control.Egison.QQ (mc2) where
 
-import Language.Haskell.TH
-import Language.Haskell.TH.Quote
-import Language.Haskell.Meta
-import Data.Strings
-import Control.Egison.Match
-import Data.Text.ICU.Replace
+import           Control.Egison.Match
+import           Data.Strings
+import           Data.Text.ICU.Replace
+import           Language.Haskell.Meta
+import           Language.Haskell.TH
+import           Language.Haskell.TH.Quote
 
 
 mc2 :: QuasiQuoter
