@@ -64,7 +64,7 @@ executable egison-haskell
   -- other-extensions:
 
   -- Other library packages from which modules are imported.
-  build-depends:       egison-haskell, base >=4.9 && <4.10, assert, primes
+  build-depends:       egison-haskell, base >=4.9 && <4.10
 
   -- Directories containing source files.
   -- hs-source-dirs:
