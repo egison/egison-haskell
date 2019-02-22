@@ -1,5 +1,4 @@
-{-# LANGUAGE QuasiQuotes     #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 module Control.Egison.Matcher (
   eql,
@@ -47,7 +46,7 @@ multiset' _ NilPat t = [[] | null t]
 multiset' m (ConsPat p1 p2) t =
   map (\(x, xs) -> [MAtom p1 m x, MAtom p2 (multiset m) xs])
     (matchAll t (list m)
-      $(mc [e| [(JoinPat (PatVar "hs") (ConsPat (PatVar "x") (PatVar "ts")), (x', hs' ++ ts'))] |]))
+      [ [mc| JoinPat $hs (ConsPat $x $ts) => (x, hs ++ ts)|] ])
 
 unjoin :: [a] -> [([a], [a])]
 unjoin []     = [([], [])]

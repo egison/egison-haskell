@@ -61,28 +61,33 @@ extractPatVars (AppE (ConE name) p:xs) vars
 extractPatVars (AppE (AppE (ConE name) p1) p2:xs) vars
   | nameBase name `elem` ["AndPat", "OrPat", "ConsPat", "JoinPat"] = extractPatVars (p1:p2:xs) vars
 extractPatVars (InfixE (Just (ConE name)) (VarE op) (Just p):xs) vars = extractPatVars (AppE (ConE name) p:xs) vars
+extractPatVars (UInfixE (ConE name) (VarE op) y:xs) vs = extractPatVars (AppE (ConE name) y:xs) vs
+extractPatVars (UInfixE (UInfixE x (VarE op) y) z w:xs) vs = extractPatVars (AppE x (UInfixE y z w):xs) vs
 extractPatVars (_:xs) vars = extractPatVars xs vars
 
 changePat :: Exp -> [[String]] -> Q (Exp, [[String]])
 changePat e@(AppE (ConE name) p) vs
-  | name == 'ValuePat = do
+  | nameBase name == "ValuePat" = do
       let (vars:varss) = vs
       vars' <- mapM newName vars
       vars'' <- mapM (\s -> newName $ s ++ "'") vars
       (, varss) <$> appE (conE 'ValuePat) (lamE [listP $ map (\x -> conP 'Result [varP x]) vars']
         $ foldr (\(x, x') acc -> letE [valD (varP x') (normalB (appE (varE 'unsafeCoerce) (varE x))) []] acc) (return $ changeExp (dict $ zip vars vars'') p) $ zip vars' vars'')
-  | name == 'NotPat = do
+  | nameBase name == "NotPat" = do
       (e', vs') <- changePat p vs
       (, vs') <$> appE (conE name) (return e')
-  | name == 'LaterPat = do
+  | nameBase name == "LaterPat" = do
       (e', vs') <- changePat p vs
       (, vs') <$> appE (conE name) (return e')
   | otherwise = return (e, vs)
 changePat e@(AppE (AppE (ConE name) p1) p2) vs
-  | name `elem` ['AndPat, 'OrPat, 'ConsPat, 'JoinPat] = do
+  | nameBase name `elem` ["AndPat", "OrPat", "ConsPat", "JoinPat"] = do
       (e1, vs1) <- changePat p1 vs
       (e2, vs2) <- changePat p2 vs1
       (, vs2) <$> appE (appE (conE name) (return e1)) (return e2)
   | otherwise = return (e, vs)
 changePat (InfixE (Just (ConE name)) (VarE op) (Just p)) vs = changePat (AppE (ConE name) p) vs
+changePat (UInfixE (ConE name) (VarE op) p) vs = changePat (AppE (ConE name) p) vs
+changePat (UInfixE (UInfixE x (VarE op) y) z w) vs = changePat (AppE x (UInfixE y z w)) vs
+changePat (ParensE x) vs = changePat x vs
 changePat e vs = return (e, vs)
