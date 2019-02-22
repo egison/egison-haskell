@@ -21,7 +21,7 @@ import           Text.Regex
 mc :: QuasiQuoter
 mc = QuasiQuoter { quoteExp = \s -> do
                       let (pat, exp) = strSplit "=>" s
-                      let Right e1 = parseExp $ changePatVar pat
+                      let Right e1 = parseExp $ changeValuePat $ changePatVar pat
                       let Right e2 = parseExp exp
                       mcChange $ return $ TupE [e1, e2]
                   , quotePat = undefined
@@ -30,6 +30,9 @@ mc = QuasiQuoter { quoteExp = \s -> do
 
 changePatVar :: String -> String
 changePatVar pat = subRegex (mkRegex "\\$(\\w+)") pat "(PatVar \"\\1\")"
+
+changeValuePat :: String -> String
+changeValuePat pat = subRegex (mkRegex "\\#(\\([^)]+\\)|\\w+)") pat "(ValuePat \\1)"
 
 mcChange :: ExpQ -> ExpQ
 mcChange e = do
