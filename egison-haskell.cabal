@@ -78,3 +78,4 @@ Test-Suite test
   Main-Is:        Test.hs
   Build-Depends: egison-haskell, base >= 4.9 && <4.10, hspec, primes
   Other-modules:   Spec
+  default-language:    Haskell2010
