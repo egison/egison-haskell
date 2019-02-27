@@ -4,6 +4,8 @@
 
 module Control.Egison.Match (
   mc,
+  changePatVar,
+  changeValuePat,
   mcChange,
   matchAll,
   match,
