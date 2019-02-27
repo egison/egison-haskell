@@ -2,11 +2,7 @@
 
 ## Usage
 
-`matchAll <target> <matcher> [ <match clause> ]`
-
-`<matcher> ::= (list <matcher>) | (multiset <matcher>) | integer | eql | something`
-
-`<match clause> ::= [mc| <pattern> => <expr> |]`
+matchAll \<target\> \<matcher\> [ [mc| \<pattern\> => \<expr\> |] ]
 
 ```haskell
 {-# LANGUAGE QuasiQuotes #-}
