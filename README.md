@@ -5,6 +5,7 @@
 `matchAll <target> <matcher> [ <match clause> ]`
 
 `<matcher> ::= (list <matcher>) | (multiset <matcher>) | integer | eql | something`
+
 `<match clause> ::= [mc| <pattern> => <expr> |]`
 
 ```haskell
