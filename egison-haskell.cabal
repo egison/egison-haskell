@@ -56,7 +56,7 @@ Library
                    Control.Egison.Matcher
   default-language:    Haskell2010
 
-executable eh-preprocessor
+executable egison-preprocessor
   -- .hs or .lhs file containing the Main module.
   main-is:             Main.hs
 
