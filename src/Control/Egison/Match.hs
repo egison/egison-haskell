@@ -34,7 +34,7 @@ changePatVar :: String -> String
 changePatVar pat = subRegex (mkRegex "\\$(\\w+)") pat "(PatVar \"\\1\")"
 
 changeValuePat :: String -> String
-changeValuePat pat = subRegex (mkRegex "\\#(\\([^)]+\\)|\\w+)") pat "(ValuePat \\1)"
+changeValuePat pat = subRegex (mkRegex "\\#(\\([^)]+\\)|\\[[^)]+\\]|\\w+)") pat "(ValuePat \\1)"
 
 mcChange :: ExpQ -> ExpQ
 mcChange e = do
