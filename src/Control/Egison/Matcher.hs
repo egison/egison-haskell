@@ -43,6 +43,7 @@ multiset' :: Matcher a -> Pattern [a] -> [a] -> [[MAtom]]
 multiset' _ p@Wildcard t = [[MAtom p something t]]
 multiset' _ p@(PatVar _) t = [[MAtom p something t]]
 multiset' _ NilPat t = [[] | null t]
+multiset' m (ConsPat p Wildcard) t = map (\x -> [MAtom p m x]) t
 multiset' m (ConsPat p1 p2) t =
   map (\(x, xs) -> [MAtom p1 m x, MAtom p2 (multiset m) xs])
     (matchAll t (list m)
