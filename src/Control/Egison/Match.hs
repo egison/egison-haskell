@@ -31,10 +31,10 @@ mc = QuasiQuoter { quoteExp = \s -> do
                   , quoteDec = undefined }
 
 changePatVar :: String -> String
-changePatVar pat = subRegex (mkRegex "\\$(\\w+)") pat "(PatVar \"\\1\")"
+changePatVar pat = subRegex (mkRegex "\\$([a-zA-Z0-9]+)") pat "(PatVar \"\\1\")"
 
 changeValuePat :: String -> String
-changeValuePat pat = subRegex (mkRegex "\\#(\\([^)]+\\)|\\[[^)]+\\]|\\w+)") pat "(ValuePat \\1)"
+changeValuePat pat = subRegex (mkRegex "\\#(\\([^)]+\\)|\\[[^)]+\\]|[a-zA-Z0-9]+)") pat "(ValuePat \\1)"
 
 mcChange :: ExpQ -> ExpQ
 mcChange e = do
