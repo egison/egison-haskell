@@ -25,3 +25,6 @@ cabal.project.local~
 
 Match
 PPTest
+
+kotadev/**
+!kotadev/*.hs

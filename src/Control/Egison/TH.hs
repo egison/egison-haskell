@@ -48,6 +48,7 @@ changeExp _ e = e
 changeName :: Map String Name -> Name -> Name
 changeName dct name = fromMaybe name $ nameBase name #! dct
 
+-- extract patvars from pattern
 extractPatVars :: [Exp] -> [String] -> ([String], [Int])
 extractPatVars [] vars = (vars, [])
 extractPatVars (ParensE x:xs) vars = extractPatVars (x:xs) vars
@@ -60,6 +61,9 @@ extractPatVars (AppE (ConE name) p:xs) vars
       let (vs2, ns2) = extractPatVars [p] vs1 in (vs2, ns2 ++ ns1)
 extractPatVars (AppE (AppE (ConE name) p1) p2:xs) vars
   | nameBase name `elem` ["AndPat", "OrPat", "ConsPat", "JoinPat"] = extractPatVars (p1:p2:xs) vars
+extractPatVars (AppE (AppE (ConE name) _) (ListE ls):xs) vars
+  | nameBase name == "UserPat" = extractPatVars (ls ++ xs) vars
+extractPatVars (AppE (VarE _) p:xs) vars = extractPatVars (p:xs) vars
 extractPatVars (InfixE (Just (ConE name)) (VarE op) (Just p):xs) vars = extractPatVars (AppE (ConE name) p:xs) vars
 extractPatVars (UInfixE (ConE name) (VarE op) y:xs) vs = extractPatVars (AppE (ConE name) y:xs) vs
 extractPatVars (UInfixE (UInfixE x (VarE op) y) z w:xs) vs = extractPatVars (AppE x (UInfixE y z w):xs) vs
@@ -77,6 +81,9 @@ changePat e@(AppE (ConE name) p) vs
       (e', vs') <- changePat p vs
       (, vs') <$> appE (conE name) (return e')
   | nameBase name == "LaterPat" = do
+      (e', vs') <- changePat p vs
+      (, vs') <$> appE (conE name) (return e')
+  | nameBase name == "UserPat" = do
       (e', vs') <- changePat p vs
       (, vs') <$> appE (conE name) (return e')
   | otherwise = return (e, vs)
