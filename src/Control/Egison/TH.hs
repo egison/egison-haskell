@@ -59,14 +59,14 @@ extractPatVars (AppE (ConE name) p:xs) vars
   | nameBase name == "LaterPat" =
       let (vs1, ns1) = extractPatVars xs vars in
       let (vs2, ns2) = extractPatVars [p] vs1 in (vs2, ns2 ++ ns1)
-extractPatVars (AppE (AppE (ConE name) p1) p2:xs) vars
-  | nameBase name `elem` ["AndPat", "OrPat", "ConsPat", "JoinPat"] = extractPatVars (p1:p2:xs) vars
-extractPatVars (AppE (AppE (ConE name) _) (ListE ls):xs) vars
-  | nameBase name == "UserPat" = extractPatVars (ls ++ xs) vars
+  | otherwise = extractPatVars (p:xs) vars
+extractPatVars (AppE (AppE (ConE name) p1) p2:xs) vars = extractPatVars (p1:p2:xs) vars
 extractPatVars (AppE (VarE _) p:xs) vars = extractPatVars (p:xs) vars
 extractPatVars (InfixE (Just (ConE name)) (VarE op) (Just p):xs) vars = extractPatVars (AppE (ConE name) p:xs) vars
 extractPatVars (UInfixE (ConE name) (VarE op) y:xs) vs = extractPatVars (AppE (ConE name) y:xs) vs
 extractPatVars (UInfixE (UInfixE x (VarE op) y) z w:xs) vs = extractPatVars (AppE x (UInfixE y z w):xs) vs
+extractPatVars (SigE x typ:xs) vs = extractPatVars (x:xs) vs
+extractPatVars (ListE ls:xs) vs = extractPatVars (ls ++ xs) vs
 extractPatVars (_:xs) vars = extractPatVars xs vars
 
 changePat :: Exp -> [[String]] -> Q (Exp, [[String]])
@@ -77,24 +77,16 @@ changePat e@(AppE (ConE name) p) vs
       vars'' <- mapM (\s -> newName $ s ++ "'") vars
       (, varss) <$> appE (conE 'ValuePat) (lamE [listP $ map (\x -> conP 'Result [varP x]) vars']
         $ foldr (\(x, x') acc -> letE [valD (varP x') (normalB (appE (varE 'unsafeCoerce) (varE x))) []] acc) (return $ changeExp (dict $ zip vars vars'') p) $ zip vars' vars'')
-  | nameBase name == "NotPat" = do
+  | otherwise = do
       (e', vs') <- changePat p vs
       (, vs') <$> appE (conE name) (return e')
-  | nameBase name == "LaterPat" = do
-      (e', vs') <- changePat p vs
-      (, vs') <$> appE (conE name) (return e')
-  | nameBase name == "UserPat" = do
-      (e', vs') <- changePat p vs
-      (, vs') <$> appE (conE name) (return e')
-  | otherwise = return (e, vs)
-changePat e@(AppE (AppE (ConE name) p1) p2) vs
-  | nameBase name `elem` ["AndPat", "OrPat", "ConsPat", "JoinPat"] = do
-      (e1, vs1) <- changePat p1 vs
-      (e2, vs2) <- changePat p2 vs1
-      (, vs2) <$> appE (appE (conE name) (return e1)) (return e2)
-  | otherwise = return (e, vs)
+changePat (AppE e1 e2) vs = do
+  (e1', vs') <- changePat e1 vs
+  (e2', vs'') <- changePat e2 vs'
+  (,vs'') <$> appE (return e1') (return e2')
 changePat (InfixE (Just (ConE name)) (VarE op) (Just p)) vs = changePat (AppE (ConE name) p) vs
 changePat (UInfixE (ConE name) (VarE op) p) vs = changePat (AppE (ConE name) p) vs
 changePat (UInfixE (UInfixE x (VarE op) y) z w) vs = changePat (AppE x (UInfixE y z w)) vs
 changePat (ParensE x) vs = changePat x vs
+changePat (SigE x typ) vs = changePat x vs
 changePat e vs = return (e, vs)
