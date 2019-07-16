@@ -7,7 +7,7 @@ module Control.Egison.Core (
   Result(..),
   Matcher(..),
   Pattern(..),
-  Pattern'(..),
+  Pat(..),
   something,
   processMStatesAll,
              ) where
@@ -32,7 +32,7 @@ something = Something
 -- Patterns
 --
 
-data Pattern' = forall a. Pattern' (Pattern a)
+data Pat = forall a. Pat (Pattern a)
 
 data Pattern a where
   Wildcard  :: Pattern a
@@ -50,7 +50,7 @@ data Pattern a where
   ConsPat :: a ~ [b] => Pattern b -> Pattern a -> Pattern a
   JoinPat :: a ~ [b] => Pattern a -> Pattern a -> Pattern a
 
-  UserPat :: String -> [Pattern'] -> Pattern a
+  UserPat :: String -> [Pat] -> Pattern a
 
 --
 -- Pattern-matching algorithm

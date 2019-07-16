@@ -15,7 +15,7 @@ tree' _ p@(PatVar _) t           = [[MAtom p something t]]
 tree' m (ValuePat' v) t          = [[] | v == t]
 tree' m (UserPat "Leaf" []) Leaf = [[]]
 tree' m (UserPat "Leaf" []) _    = []
-tree' m (UserPat "Node" [Pattern' p1, Pattern' p2, Pattern' p3]) (Node tree1 v tree2) =
+tree' m (UserPat "Node" [Pat p1, Pat p2, Pat p3]) (Node tree1 v tree2) =
   let p1' = unsafeCoerce p1 in
   let p2' = unsafeCoerce p2 in
   let p3' = unsafeCoerce p3 in
@@ -30,5 +30,5 @@ main = do
   putStrLn $ show $ f t2 -- [0]
  where
    f t = matchAll t (tree integer)
-       [ [mc| (UserPat "Node" [Pattern' Wildcard, Pattern' $x, Pattern' Wildcard]) => x |],
+       [ [mc| (UserPat "Node" [Pat Wildcard, Pat $x, Pat Wildcard]) => x |],
          [mc| (UserPat "Leaf" []) => 0 |] ]
