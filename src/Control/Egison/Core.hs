@@ -1,7 +1,5 @@
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE GADTs                     #-}
-{-# LANGUAGE TypeFamilies              #-}
-
 
 module Control.Egison.Core (
   MState(..),

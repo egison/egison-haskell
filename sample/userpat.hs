@@ -1,5 +1,6 @@
 {-# LANGUAGE QuasiQuotes     #-}
 {-# LANGUAGE TemplateHaskell #-}
+
 import           Control.Egison
 import           Unsafe.Coerce
 
@@ -29,5 +30,5 @@ main = do
   putStrLn $ show $ f t2 -- [0]
  where
    f t = matchAll t (tree integer)
-       [ [mc| (UserPat "Node" [Pattern' Wildcard, Pattern' $x, Pattern' Wildcard])  => x |],
+       [ [mc| (UserPat "Node" [Pattern' Wildcard, Pattern' $x, Pattern' Wildcard]) => x |],
          [mc| (UserPat "Leaf" []) => 0 |] ]
