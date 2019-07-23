@@ -12,7 +12,7 @@ import           Test.Hspec
 
 pmMap :: (a -> b) -> [a] -> [b]
 pmMap f xs = matchAll xs (list something)
-               [ [mc| JoinPat Wildcard (ConsPat $x Wildcard) => f x|] ]
+               [ [mc| UserPat "Join" [Pat Wildcard, Pat (ConsPat $x Wildcard)] => f x|] ]
 
 pmConcat :: [[a]] -> [a]
 pmConcat xss = matchAll xss (multiset (multiset something))
@@ -36,7 +36,7 @@ spec = do
 
     it "Twin primes (pattern matching with infinitely many results)" $
       take 10 (matchAll primes (list integer)
-                [ [mc| JoinPat Wildcard (ConsPat $p (ConsPat #(p+2) Wildcard)) => (p, p+2) |] ])
+                [ [mc| UserPat "Join" [Pat Wildcard, Pat (ConsPat $p (ConsPat #(p+2) Wildcard))] => (p, p+2) |] ])
       `shouldBe` [(3,5),(5,7),(11,13),(17,19),(29,31),(41,43),(59,61),(71,73),(101,103),(107,109)]
 
     it "Value patterns, and-patterns, or-patterns, and not-patterns" $

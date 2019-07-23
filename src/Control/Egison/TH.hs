@@ -83,10 +83,14 @@ changePat e@(AppE (ConE name) p) vs
 changePat (AppE e1 e2) vs = do
   (e1', vs') <- changePat e1 vs
   (e2', vs'') <- changePat e2 vs'
-  (,vs'') <$> appE (return e1') (return e2')
+  (, vs'') <$> appE (return e1') (return e2')
 changePat (InfixE (Just (ConE name)) (VarE op) (Just p)) vs = changePat (AppE (ConE name) p) vs
 changePat (UInfixE (ConE name) (VarE op) p) vs = changePat (AppE (ConE name) p) vs
 changePat (UInfixE (UInfixE x (VarE op) y) z w) vs = changePat (AppE x (UInfixE y z w)) vs
 changePat (ParensE x) vs = changePat x vs
 changePat (SigE x typ) vs = changePat x vs
+changePat (ListE (x:xs)) vs = do
+  (x', vs') <- changePat x vs
+  (ListE xs', vs'') <- changePat (ListE xs) vs'
+  return (ListE (x':xs'), vs'')
 changePat e vs = return (e, vs)

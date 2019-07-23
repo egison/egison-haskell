@@ -9,6 +9,7 @@ module Control.Egison.Matcher (
 
 import           Control.Egison.Core
 import           Control.Egison.Match
+import           Unsafe.Coerce
 
 --
 -- Matchers
@@ -35,6 +36,10 @@ list' _ NilPat t = [[] | null t]
 list' _ (ConsPat _ _) [] = []
 list' m (ConsPat p1 p2) (t:ts) = [[MAtom p1 m t, MAtom p2 (list m) ts]]
 list' m (JoinPat p1 p2) t = map (\(hs, ts) -> [MAtom p1 (list m) hs, MAtom p2 (list m) ts]) (unjoin t)
+list' m (UserPat "Join" [Pat p1, Pat p2]) t =
+  let p1' = unsafeCoerce p1 in
+  let p2' = unsafeCoerce p2 in
+  map (\(hs, ts) -> [MAtom p1' (list m) hs, MAtom p2' (list m) ts]) (unjoin t)
 
 multiset :: Matcher a -> Matcher [a]
 multiset m = Matcher (multiset' m)
@@ -47,7 +52,7 @@ multiset' m (ConsPat p Wildcard) t = map (\x -> [MAtom p m x]) t
 multiset' m (ConsPat p1 p2) t =
   map (\(x, xs) -> [MAtom p1 m x, MAtom p2 (multiset m) xs])
     (matchAll t (list m)
-      [ [mc| JoinPat $hs (ConsPat $x $ts) => (x, hs ++ ts)|] ])
+      [ [mc| UserPat "Join" [Pat $hs, Pat (ConsPat $x $ts)] => (x, hs ++ ts)|] ])
 
 unjoin :: [a] -> [([a], [a])]
 unjoin []     = [([], [])]
