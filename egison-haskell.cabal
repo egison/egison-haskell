@@ -56,22 +56,6 @@ Library
                    Control.Egison.Matcher
   default-language:    Haskell2010
 
-executable egison-preprocessor
-  -- .hs or .lhs file containing the Main module.
-  main-is:             Main.hs
-
-  -- LANGUAGE extensions used by modules in this package.
-  -- other-extensions:
-
-  -- Other library packages from which modules are imported.
-  build-depends:       egison-haskell, base >=4.9 && <4.10, regex-compat, strings
-
-  -- Directories containing source files.
-  hs-source-dirs:      app
-
-  -- Base language which the package is written in.
-  default-language:    Haskell2010
-
 Test-Suite test
   Type:           exitcode-stdio-1.0
   Hs-Source-Dirs: test

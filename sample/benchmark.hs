@@ -1,5 +1,4 @@
 {-# LANGUAGE QuasiQuotes     #-}
-{-# LANGUAGE TemplateHaskell #-}
 import           Control.Egison
 
 
