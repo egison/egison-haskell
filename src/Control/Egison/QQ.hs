@@ -27,7 +27,7 @@ mc = QuasiQuoter { quoteExp = \s -> do
                       e2 <- case parseExp exp of
                                  Left _ -> fail "Could not parse expression."
                                  Right exp -> return exp
-                      mcChange $ return $ TupE [e1, e2]
+                      mcChange e1 e2
                   , quotePat = undefined
                   , quoteType = undefined
                   , quoteDec = undefined }
@@ -38,44 +38,10 @@ changePatVar pat = subRegex (mkRegex "\\$([a-zA-Z0-9]+)") pat "(PatVar \"\\1\")"
 changeValuePat :: String -> String
 changeValuePat pat = subRegex (mkRegex "\\#(\\([^)]+\\)|\\[[^)]+\\]|[a-zA-Z0-9]+)") pat "(ValuePat \\1)"
 
-mcChange :: ExpQ -> ExpQ
-mcChange e = do
-  (TupE [pat, expr]) <- e
+mcChange :: Exp -> Exp -> Q Exp
+mcChange pat expr = do
   let (vars, xs) = extractPatVars [pat] []
-  [| ($(fst <$> changePat pat (map (`take` vars) xs)), $(makeExprQ vars expr)) |]
-
-makeExprQ :: [String] -> Exp -> ExpQ
-makeExprQ vars expr = do
-  vars' <- mapM newName vars
-  vars'' <- mapM (\s -> newName $ s ++ "'") vars
-  lamE [listP $ map (\x -> conP 'Result [varP x]) vars']
-    $ foldr (\(x, x') acc -> letE [valD (varP x') (normalB (appE (varE 'unsafeCoerce) (varE x))) []] acc) (return $ changeExp (dict $ zip vars vars'') expr) $ zip vars' vars''
-
-changeExp :: Map String Name -> Exp -> Exp
-changeExp dct (VarE name) = VarE $ changeName dct name
-changeExp dct (AppE e1 e2) = AppE (changeExp dct e1) (changeExp dct e2)
--- changeExp dct (AppTypeE e t) = AppTypeE (changeExp dct e) t
-changeExp dct (InfixE me1 e me2) = InfixE (fmap (changeExp dct) me1) e (fmap (changeExp dct) me2)
-changeExp dct (UInfixE e1 e2 e3) = UInfixE (changeExp dct e1) (changeExp dct e2) (changeExp dct e3)
-changeExp dct (ParensE e) = ParensE (changeExp dct e)
-changeExp dct (LamE pats e) = LamE pats (changeExp dct e)
-changeExp dct (TupE es) = TupE $ map (changeExp dct) es
-changeExp dct (UnboxedTupE es) = UnboxedTupE $ map (changeExp dct) es
--- changeExp dct (UnboxedSumE e s1 s2) = UnboxedSumE (changeExp dct e) s1 s2
-changeExp dct (CondE e1 e2 e3) = CondE (changeExp dct e1) (changeExp dct e2) (changeExp dct e3)
-changeExp dct (MultiIfE es) = MultiIfE $ map (\(g, e) -> (g, changeExp dct e)) es
-changeExp dct (LetE ds e) = LetE ds $ changeExp dct e
-changeExp dct (CaseE e ms) = CaseE (changeExp dct e) ms
-changeExp dct (ListE es) = ListE $ map (changeExp dct) es
-changeExp dct (SigE e t) = SigE (changeExp dct e) t
-changeExp dct (RecConE name fs) = RecConE (changeName dct name) fs
-changeExp dct (RecUpdE e fs) = RecUpdE (changeExp dct e) fs
-changeExp dct (StaticE e) = StaticE $ changeExp dct e
-changeExp dct (UnboundVarE name) = VarE $ changeName dct name
-changeExp _ e = e
-
-changeName :: Map String Name -> Name -> Name
-changeName dct name = fromMaybe name $ nameBase name #! dct
+  [| ($(fst <$> changePat pat (map (`take` vars) xs)), $(changeExp vars expr)) |]
 
 -- extract patvars from pattern
 extractPatVars :: [Exp] -> [String] -> ([String], [Int])
@@ -98,14 +64,12 @@ extractPatVars (SigE x typ:xs) vs = extractPatVars (x:xs) vs
 extractPatVars (ListE ls:xs) vs = extractPatVars (ls ++ xs) vs
 extractPatVars (_:xs) vars = extractPatVars xs vars
 
+-- change ValuePat e to \[Result x] -> let x' = unsafeCoerce x in e
 changePat :: Exp -> [[String]] -> Q (Exp, [[String]])
 changePat e@(AppE (ConE name) p) vs
   | nameBase name == "ValuePat" = do
       let (vars:varss) = vs
-      vars' <- mapM newName vars
-      vars'' <- mapM (\s -> newName $ s ++ "'") vars
-      (, varss) <$> appE (conE 'ValuePat) (lamE [listP $ map (\x -> conP 'Result [varP x]) vars']
-        $ foldr (\(x, x') acc -> letE [valD (varP x') (normalB (appE (varE 'unsafeCoerce) (varE x))) []] acc) (return $ changeExp (dict $ zip vars vars'') p) $ zip vars' vars'')
+      (, varss) <$> appE (conE 'ValuePat) (changeExp vars p)
   | otherwise = do
       (e', vs') <- changePat p vs
       (, vs') <$> appE (conE name) (return e')
@@ -123,3 +87,36 @@ changePat (ListE (x:xs)) vs = do
   (ListE xs', vs'') <- changePat (ListE xs) vs'
   return (ListE (x':xs'), vs'')
 changePat e vs = return (e, vs)
+
+-- change e to \[Result x] -> let x' = unsafeCoerce x in e
+changeExp :: [String] -> Exp -> Q Exp
+changeExp vars expr = do
+  vars' <- mapM newName vars
+  vars'' <- mapM (\s -> newName $ s ++ "'") vars
+  lamE [listP $ map (\x -> conP 'Result [varP x]) vars']
+    $ foldr (\(x, x') acc -> letE [valD (varP x') (normalB (appE (varE 'unsafeCoerce) (varE x))) []] acc) (return $ changeExp' (dict $ zip vars vars'') expr) $ zip vars' vars''
+
+-- replace x in e to x'
+changeExp' :: Map String Name -> Exp -> Exp
+changeExp' dct (VarE name) = VarE $ changeName dct name
+changeExp' dct (AppE e1 e2) = AppE (changeExp' dct e1) (changeExp' dct e2)
+changeExp' dct (InfixE me1 e me2) = InfixE (fmap (changeExp' dct) me1) e (fmap (changeExp' dct) me2)
+changeExp' dct (UInfixE e1 e2 e3) = UInfixE (changeExp' dct e1) (changeExp' dct e2) (changeExp' dct e3)
+changeExp' dct (ParensE e) = ParensE (changeExp' dct e)
+changeExp' dct (LamE pats e) = LamE pats (changeExp' dct e)
+changeExp' dct (TupE es) = TupE $ map (changeExp' dct) es
+changeExp' dct (UnboxedTupE es) = UnboxedTupE $ map (changeExp' dct) es
+changeExp' dct (CondE e1 e2 e3) = CondE (changeExp' dct e1) (changeExp' dct e2) (changeExp' dct e3)
+changeExp' dct (MultiIfE es) = MultiIfE $ map (\(g, e) -> (g, changeExp' dct e)) es
+changeExp' dct (LetE ds e) = LetE ds $ changeExp' dct e
+changeExp' dct (CaseE e ms) = CaseE (changeExp' dct e) ms
+changeExp' dct (ListE es) = ListE $ map (changeExp' dct) es
+changeExp' dct (SigE e t) = SigE (changeExp' dct e) t
+changeExp' dct (RecConE name fs) = RecConE (changeName dct name) fs
+changeExp' dct (RecUpdE e fs) = RecUpdE (changeExp' dct e) fs
+changeExp' dct (StaticE e) = StaticE $ changeExp' dct e
+changeExp' dct (UnboundVarE name) = VarE $ changeName dct name
+changeExp' _ e = e
+
+changeName :: Map String Name -> Name -> Name
+changeName dct name = fromMaybe name $ nameBase name #! dct
