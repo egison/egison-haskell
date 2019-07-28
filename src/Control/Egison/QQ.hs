@@ -1,19 +1,48 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell  #-}
 {-# LANGUAGE TupleSections   #-}
 
-module Control.Egison.TH (
-  makeExprQ,
-  extractPatVars,
-  changePat,
-               ) where
+module Control.Egison.QQ (
+  mc
+  ) where
 
 import           Control.Egison.Core
 import           Data.List
 import           Data.Map            (Map)
-import           Data.Maybe
-import           Language.Haskell.TH
+import           Data.Maybe          (fromMaybe)
+import           Data.Strings
+import           Language.Haskell.Meta
+import           Language.Haskell.TH        hiding (match)
+import           Language.Haskell.TH.Quote
+import           Language.Haskell.TH.Syntax
+import           Text.Regex
 import           Unsafe.Coerce
 import           Useful.Dictionary
+
+mc :: QuasiQuoter
+mc = QuasiQuoter { quoteExp = \s -> do
+                      let (pat, exp) = strSplit "=>" s
+                      e1 <- case parseExp (changeValuePat (changePatVar pat)) of
+                              Left _ -> fail "Could not parse pattern expression."
+                              Right exp -> return exp
+                      e2 <- case parseExp exp of
+                                 Left _ -> fail "Could not parse expression."
+                                 Right exp -> return exp
+                      mcChange $ return $ TupE [e1, e2]
+                  , quotePat = undefined
+                  , quoteType = undefined
+                  , quoteDec = undefined }
+
+changePatVar :: String -> String
+changePatVar pat = subRegex (mkRegex "\\$([a-zA-Z0-9]+)") pat "(PatVar \"\\1\")"
+
+changeValuePat :: String -> String
+changeValuePat pat = subRegex (mkRegex "\\#(\\([^)]+\\)|\\[[^)]+\\]|[a-zA-Z0-9]+)") pat "(ValuePat \\1)"
+
+mcChange :: ExpQ -> ExpQ
+mcChange e = do
+  (TupE [pat, expr]) <- e
+  let (vars, xs) = extractPatVars [pat] []
+  [| ($(fst <$> changePat pat (map (`take` vars) xs)), $(makeExprQ vars expr)) |]
 
 makeExprQ :: [String] -> Exp -> ExpQ
 makeExprQ vars expr = do

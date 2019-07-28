@@ -5,10 +5,11 @@ module Control.Egison.Matcher (
   integer,
   list,
   multiset,
-             ) where
+  ) where
 
 import           Control.Egison.Core
 import           Control.Egison.Match
+import           Control.Egison.QQ
 import           Unsafe.Coerce
 
 --

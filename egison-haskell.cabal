@@ -51,9 +51,9 @@ Library
   Exposed-Modules:
                    Control.Egison
                    Control.Egison.Core
-                   Control.Egison.TH
                    Control.Egison.Match
                    Control.Egison.Matcher
+                   Control.Egison.QQ
   default-language:    Haskell2010
 
 Test-Suite test

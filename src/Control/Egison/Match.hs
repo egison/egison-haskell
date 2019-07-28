@@ -1,47 +1,14 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE QuasiQuotes      #-}
-{-# LANGUAGE TemplateHaskell  #-}
-
-
 module Control.Egison.Match (
-  mc,
-  changePatVar,
-  changeValuePat,
-  mcChange,
   matchAll,
   match,
+  processMStatesAll,
   ) where
 
-import           Control.Egison.Core
-import           Control.Egison.TH
-import           Data.Strings
-import           Language.Haskell.Meta
-import           Language.Haskell.TH        hiding (match)
-import           Language.Haskell.TH.Quote
-import           Language.Haskell.TH.Syntax
-import           Text.Regex
+import Control.Egison.Core
 
-mc :: QuasiQuoter
-mc = QuasiQuoter { quoteExp = \s -> do
-                      let (pat, exp) = strSplit "=>" s
-                      let Right e1 = parseExp $ changeValuePat $ changePatVar pat
-                      let Right e2 = parseExp exp
-                      mcChange $ return $ TupE [e1, e2]
-                  , quotePat = undefined
-                  , quoteType = undefined
-                  , quoteDec = undefined }
-
-changePatVar :: String -> String
-changePatVar pat = subRegex (mkRegex "\\$([a-zA-Z0-9]+)") pat "(PatVar \"\\1\")"
-
-changeValuePat :: String -> String
-changeValuePat pat = subRegex (mkRegex "\\#(\\([^)]+\\)|\\[[^)]+\\]|[a-zA-Z0-9]+)") pat "(ValuePat \\1)"
-
-mcChange :: ExpQ -> ExpQ
-mcChange e = do
-  (TupE [pat, expr]) <- e
-  let (vars, xs) = extractPatVars [pat] []
-  [| ($(fst <$> changePat pat (map (`take` vars) xs)), $(makeExprQ vars expr)) |]
+--
+-- Pattern-matching algorithm
+--
 
 matchAll :: a -> Matcher a -> [(Pattern a, [Result] -> b)] -> [b]
 matchAll tgt matcher =
@@ -50,3 +17,33 @@ matchAll tgt matcher =
 
 match :: a -> Matcher a -> [(Pattern a, [Result] -> b)] -> b
 match t m xs = head $ matchAll t m xs
+
+processMStatesAll :: [[MState]] -> [[Result]]
+processMStatesAll [] = []
+processMStatesAll streams = let (results, streams') = extractResults $ concatMap processMStates streams in results ++ processMStatesAll streams'
+
+extractResults :: [[MState]] -> ([[Result]], [[MState]])
+extractResults = foldr extractResults' ([], [])
+ where
+   extractResults' :: [MState] -> ([[Result]], [[MState]]) -> ([[Result]], [[MState]])
+   extractResults' [] (rss, mss) = (rss, mss)
+   extractResults' (MState [] rs:ms) (rss, mss) = extractResults' ms (rs:rss, mss)
+   extractResults' ms (rss, mss) = (rss, ms:mss)
+
+processMStates :: [MState] -> [[MState]]
+processMStates []          = []
+processMStates (mstate:ms) = [processMState mstate, ms]
+
+processMState :: MState -> [MState]
+processMState (MState (MAtom Wildcard something t:atoms) rs) = [MState atoms rs]
+processMState (MState (MAtom (PatVar _) something t:atoms) rs) = [MState atoms (rs ++ [Result t])]
+processMState (MState (MAtom (ValuePat f) (Matcher m) t:atoms) rs) =
+  let next = m (ValuePat' $ f rs) t in
+      map (\nt -> MState (nt ++ atoms) rs) next
+processMState (MState (MAtom (AndPat p1 p2) m t:atoms) rs) = [MState (MAtom p1 m t:MAtom p2 m t:atoms) rs]
+processMState (MState (MAtom (OrPat p1 p2) m t:atoms) rs) = [MState (MAtom p1 m t:atoms) rs, MState (MAtom p2 m t:atoms) rs]
+processMState (MState (MAtom (NotPat p) m t:atoms) rs) = [MState atoms rs | null $ processMStatesAll [[MState [MAtom p m t] rs]]]
+processMState (MState (MAtom (LaterPat p) m t:atoms) rs) = [MState (atoms ++ [MAtom p m t]) rs]
+processMState (MState (MAtom (PredicatePat f) _ t:atoms) rs) = [MState atoms rs | f t]
+processMState (MState (MAtom p (Matcher m) t:atoms) rs) =
+  map (\newAtoms -> MState (newAtoms ++ atoms) rs) (m p t)
