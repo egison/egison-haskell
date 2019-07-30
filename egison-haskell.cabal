@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a78f51c4f35a6f8afee76036d3b642330c6583810d03ed612dea0670f7d07c52
+-- hash: f7fd977e25301d89318aef37d1794503b74619e0b1de9f26c60da7b08bd0ac68
 
 name:           egison-haskell
 version:        0.1.0.0
@@ -12,7 +12,7 @@ description:    Please see the README on GitHub at <https://github.com/egison/eg
 homepage:       https://github.com/egison/egison-haskell#readme
 bug-reports:    https://github.com/egison/egison-haskell/issues
 author:         kotapiku, Satoshi Egi
-maintainer:     Satoshi Egi <egi@egison.org>
+maintainer:     kotapiku <ice08235523@gmail.com>
 copyright:      2019, kotapiku
 license:        MIT
 license-file:   LICENSE
