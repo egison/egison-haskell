@@ -25,19 +25,26 @@ resolver: lts-13.30
 # packages:
 # - some-directory
 # - https://example.com/foo/bar/baz-0.0.2.tar.gz
-# - location:
-#    git: https://github.com/commercialhaskell/stack.git
-#    commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
-# - location: https://github.com/commercialhaskell/stack/commit/e7b331f14bcffb8367cd58fbfc8b40ec7642100a
-#  subdirs:
-#  - auto-update
-#  - wai
+#   subdirs:
+#   - auto-update
+#   - wai
 packages:
 - .
-# Dependency packages to be pulled from upstream that are not in the resolver
-# using the same syntax as the packages field.
-# (e.g., acme-missiles-0.3)
-extra-deps: [assert-0.0.1.2, Useful-0.0.6, containers-0.5.7.1, template-haskell-2.14.0.0, haskell-src-meta-0.8.0.3, strings-1.1, regex-compat-0.92, QuickCheck-2.13.2, hspec-core-2.7.1, hspec-discover-2.7.1, hspec-2.7.1, binary-0.8.7.0]
+# The following packages have been ignored due to incompatibility with the
+# resolver compiler, dependency conflicts with other packages
+# or unsatisfied dependencies.
+#- .
+
+# Dependency packages to be pulled from upstream that are not in the resolver.
+# These entries can reference officially published versions as well as
+# forks / in-progress versions pinned to a git hash. For example:
+#
+# extra-deps:
+# - acme-missiles-0.3
+# - git: https://github.com/commercialhaskell/stack.git
+#   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
+#
+extra-deps: [Useful-0.0.6, strings-1.1]
 
 # Override default flag values for local packages and extra-deps
 # flags: {}
@@ -50,7 +57,7 @@ extra-deps: [assert-0.0.1.2, Useful-0.0.6, containers-0.5.7.1, template-haskell-
 #
 # Require a specific version of stack, using version ranges
 # require-stack-version: -any # Default
-# require-stack-version: ">=1.9"
+# require-stack-version: ">=2.1"
 #
 # Override the architecture used by stack, especially useful on Windows
 # arch: i386

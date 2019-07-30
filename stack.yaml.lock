@@ -5,13 +5,6 @@
 
 packages:
 - completed:
-    hackage: assert-0.0.1.2@sha256:d1839198cf04396641280154e766ea3340f6109849d9d243286256f5fa744754,1413
-    pantry-tree:
-      size: 279
-      sha256: a00d6acfb5bd10a546e0436e9ac94343c42997214fec5f869d0a5b1edd4f24a0
-  original:
-    hackage: assert-0.0.1.2
-- completed:
     hackage: Useful-0.0.6@sha256:298a5965cbbea44c9db39b61b102cd2b9129c5a78c3639bf2c176d1103f06581,624
     pantry-tree:
       size: 481
@@ -19,75 +12,12 @@ packages:
   original:
     hackage: Useful-0.0.6
 - completed:
-    hackage: containers-0.5.7.1@sha256:f0ded2e0f8a9b9aabf7d3d7c0cc14a7a9cf0b6a92685454b521349b0f835e91b,7299
-    pantry-tree:
-      size: 3315
-      sha256: cc2a1d90df07bfd455ebab5289213019be19c2121dcd7fa7dfaff5a1a484ac7f
-  original:
-    hackage: containers-0.5.7.1
-- completed:
-    hackage: template-haskell-2.14.0.0@sha256:e3747ae9e2aeec160196706dd470b5fc4175678ec4136bcec9124534f67d83bc,1724
-    pantry-tree:
-      size: 850
-      sha256: f9b83407460047e23f730ac0d492ae80f86667a5ba15d3294e61d2aa147ec3d4
-  original:
-    hackage: template-haskell-2.14.0.0
-- completed:
-    hackage: haskell-src-meta-0.8.0.3@sha256:cc7ce9c443a7a5f61b570812e46131ea722d1f7d42e4f7d497f171d03cd8e536,2143
-    pantry-tree:
-      size: 897
-      sha256: 6f82fcdfba4cf4cc8fb93b7c00e116805625820fa912e5c4169585798bb54285
-  original:
-    hackage: haskell-src-meta-0.8.0.3
-- completed:
     hackage: strings-1.1@sha256:0285dec4c8ab262359342b3e5ef1eb567074669461b9b38404f1cb870c881c5c,1617
     pantry-tree:
       size: 212
       sha256: 876e5a679244143e2a7e74357427c7522a8d61f68a4cc3ae265fe4960b75a2e2
   original:
     hackage: strings-1.1
-- completed:
-    hackage: regex-compat-0.92@sha256:5cebb205c59ab95b5f80d948e15826a044d430652b07888e0d0718abb029b1e7,1643
-    pantry-tree:
-      size: 211
-      sha256: a2f41599b5216a378443fd1059ced72440b62d8d4e166a5f444c206591409c45
-  original:
-    hackage: regex-compat-0.92
-- completed:
-    hackage: QuickCheck-2.13.2@sha256:ad4e5adbd1c9dc0221a44307b992cb040c515f31095182e47aa7e974bc461df1,6952
-    pantry-tree:
-      size: 2202
-      sha256: f79eee2f6a00b2c649f993a7b358827702373cbc931ced55ebdfb59625540403
-  original:
-    hackage: QuickCheck-2.13.2
-- completed:
-    hackage: hspec-core-2.7.1@sha256:2a6dc7fa989e6feed1ff1f9fbd376e8b7e824216a981282cb0c8d5643c7a085b,4506
-    pantry-tree:
-      size: 3601
-      sha256: 53f3c9c16fcb9087a48a96fb05b939b4c87f7108f6bad1f5f273b8cd3d3f3d88
-  original:
-    hackage: hspec-core-2.7.1
-- completed:
-    hackage: hspec-discover-2.7.1@sha256:e8ce36741c06b41de58069814a7d3b7314bdeaab35ae573e3c924739011e0c29,2243
-    pantry-tree:
-      size: 1080
-      sha256: 2d1c4ccbd0c9047311d1bd24989714df844003c258964ef65d542f6627dc0fed
-  original:
-    hackage: hspec-discover-2.7.1
-- completed:
-    hackage: hspec-2.7.1@sha256:0aa48928ce80a34f8ff8c5ef114bb6807edfb8d884bcd7211eceed710e7fb7a8,1769
-    pantry-tree:
-      size: 532
-      sha256: 8128733a7ef4760bbe5d978f2145fdcb29f4491b17db11e8c05b409441ceecb4
-  original:
-    hackage: hspec-2.7.1
-- completed:
-    hackage: binary-0.8.7.0@sha256:ae3e6cca723ac55c54bbb3fa771bcf18142bc727afd57818e66d6ee6c8044f12,7705
-    pantry-tree:
-      size: 1976
-      sha256: 35e44b6d3ccf0d56fc5407dc3f0895e74696a66da189afbd65973c95743f5e25
-  original:
-    hackage: binary-0.8.7.0
 snapshots:
 - completed:
     size: 500539
