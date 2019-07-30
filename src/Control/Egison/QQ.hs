@@ -2,7 +2,7 @@
 {-# LANGUAGE TupleSections   #-}
 
 module Control.Egison.QQ (
-  mc
+  mc,
   ) where
 
 import           Control.Egison.Core
@@ -67,9 +67,9 @@ extractPatVars (_:xs) vars = extractPatVars xs vars
 -- change ValuePat e to \[Result x] -> let x' = unsafeCoerce x in e
 changePat :: Exp -> [[String]] -> Q (Exp, [[String]])
 changePat e@(AppE (ConE name) p) vs
-  | nameBase name == "ValuePat" = do
-      let (vars:varss) = vs
-      (, varss) <$> appE (conE 'ValuePat) (changeExp vars p)
+  -- | nameBase name == "ValuePat" = do
+  --     let (vars:varss) = vs
+  --     (, varss) <$> appE (conE 'ValuePat) (changeExp vars p)
   | otherwise = do
       (e', vs') <- changePat p vs
       (, vs') <$> appE (conE name) (return e')
@@ -93,8 +93,16 @@ changeExp :: [String] -> Exp -> Q Exp
 changeExp vars expr = do
   vars' <- mapM newName vars
   vars'' <- mapM (\s -> newName $ s ++ "'") vars
-  lamE [listP $ map (\x -> conP 'Result [varP x]) vars']
-    $ foldr (\(x, x') acc -> letE [valD (varP x') (normalB (appE (varE 'unsafeCoerce) (varE x))) []] acc) (return $ changeExp' (dict $ zip vars vars'') expr) $ zip vars' vars''
+  return $ LamE [f vars] expr
+
+-- TODO: \(x ::: y ::: HNil) -> hoge
+f :: [String] -> Pat
+f []     = ConP 'HNil []
+f (x:xs) = InfixP (varP x) (':::) $ f xs
+
+-- InfixP (VarP x_0) Control.Egison.Core.::: (InfixP (VarP y_1) Control.Egison.Core.::: (ConP Control.Egison.Core.HNil []))
+  -- lamE [listP $ map (\x -> conP 'Result [varP x]) vars']
+  --   $ foldr (\(x, x') acc -> letE [valD (varP x') (normalB (appE (varE 'unsafeCoerce) (varE x))) []] acc) (return $ changeExp' (dict $ zip vars vars'') expr) $ zip vars' vars''
 
 -- replace x in e to x'
 changeExp' :: Map String Name -> Exp -> Exp
