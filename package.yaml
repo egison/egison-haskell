@@ -3,7 +3,7 @@ version:             0.1.0.0
 github:              "egison/egison-haskell"
 license:             MIT
 author:              "kotapiku, Satoshi Egi"
-maintainer:          "Satoshi Egi <egi@egison.org>"
+maintainer:          "kotapiku <ice08235523@gmail.com>"
 copyright:           "2019, kotapiku"
 
 extra-source-files:
