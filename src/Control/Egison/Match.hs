@@ -4,7 +4,7 @@ module Control.Egison.Match (
   processMStatesAll,
   ) where
 
-import Control.Egison.Core
+import           Control.Egison.Core
 
 --
 -- Pattern-matching algorithm

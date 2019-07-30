@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections   #-}
 
 module Control.Egison.QQ (
@@ -7,8 +7,8 @@ module Control.Egison.QQ (
 
 import           Control.Egison.Core
 import           Data.List
-import           Data.Map            (Map)
-import           Data.Maybe          (fromMaybe)
+import           Data.Map                   (Map)
+import           Data.Maybe                 (fromMaybe)
 import           Data.Strings
 import           Language.Haskell.Meta
 import           Language.Haskell.TH        hiding (match)
