@@ -93,12 +93,12 @@ changeExp :: [String] -> Exp -> Q Exp
 changeExp vars expr = do
   vars' <- mapM newName vars
   vars'' <- mapM (\s -> newName $ s ++ "'") vars
-  return $ LamE [f vars] expr
+  return $ LamE [f vars'] expr
 
 -- TODO: \(x ::: y ::: HNil) -> hoge
-f :: [String] -> Pat
+f :: [Name] -> Pat
 f []     = ConP 'HNil []
-f (x:xs) = InfixP (varP x) (':::) $ f xs
+f (x:xs) = InfixP (VarP x) 'HCons $ f xs
 
 -- InfixP (VarP x_0) Control.Egison.Core.::: (InfixP (VarP y_1) Control.Egison.Core.::: (ConP Control.Egison.Core.HNil []))
   -- lamE [listP $ map (\x -> conP 'Result [varP x]) vars']

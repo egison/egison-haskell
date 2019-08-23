@@ -9,16 +9,20 @@ module Control.Egison.Core (
   MState(..),
   MAtom(..),
   Matcher(..),
-  Pattern(..),
+  something,
   HList(..),
+  Pattern(..),
+  BasePat(..),
   ) where
 
 --
 -- Matching states
 --
 
-data MState a m vs = forall vs' vs''. MState [MAtom a m vs'] vs''
-data MAtom a m vs = MAtom (Pattern a m vs) a
+-- data MState a m vs = forall vs' vs''. MState [MAtom a m vs'] vs''
+-- data MAtom a m vs = MAtom (Pattern a m vs) a
+data MState = forall vs. MState [MAtom] (HList vs)
+data MAtom = forall a m vs. MAtom (Pattern a m vs) m a
 -- data Matcher a = Something | Matcher (Pattern a -> a -> [[MAtom]])
 data Matcher a = Something | Matcher a
 
@@ -27,14 +31,13 @@ something = Something
 
 data HList xs where
     HNil :: HList '[]
-    (:::) :: a -> HList as -> HList (a ': as)
+    HCons :: a -> HList as -> HList (a ': as)
 
-infixr 6 :::
 --
 -- Patterns
 --
 
-newtype Pattern a m vars = Pattern { runPattern :: a -> Maybe vars }
+newtype Pattern a m vars = Pattern { runPattern :: a -> [[MAtom]] }
 
 class BasePat a m where
   wildcard :: Pattern a m (HList '[])

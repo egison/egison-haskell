@@ -1,4 +1,6 @@
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE QuasiQuotes           #-}
 
 module Control.Egison.Matcher (
   eql,
@@ -16,14 +18,14 @@ import           Unsafe.Coerce
 -- Matchers
 --
 
-newtype Eql = Eql
+data Eql = Eql
 
 eql :: Matcher Eql
 eql = Matcher Eql
 
 instance Eq a => BasePat a (Matcher Eql) where
-  wildcard = Pattern (\t -> [[MAtom p something t]])
-  patVar _ = Pattern (\t -> [[MAtom p something t]])
+  wildcard = Pattern (\t -> [[MAtom wildcard something t]])
+  patVar x = Pattern (\t -> [[MAtom (patVar x) something t]])
   valuePat' v = Pattern (\t -> [[] | v == t])
 
 -- eql :: Eq a => Matcher a
