@@ -4,64 +4,68 @@
 {-# LANGUAGE KindSignatures            #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE TypeOperators             #-}
+{-# LANGUAGE PolyKinds                 #-}
+{-# LANGUAGE TypeFamilies                 #-}
 
 module Control.Egison.Core (
   MState(..),
   MAtom(..),
   Matcher(..),
-  something,
   HList(..),
+  happend,
   Pattern(..),
   BasePat(..),
+  CollectionPat(..),
   ) where
+
+import Data.Maybe
 
 --
 -- Matching states
 --
 
--- data MState a m vs = forall vs' vs''. MState [MAtom a m vs'] vs''
--- data MAtom a m vs = MAtom (Pattern a m vs) a
-data MState = forall vs. MState [MAtom] (HList vs)
-data MAtom = forall a m vs. MAtom (Pattern a m vs) m a
--- data Matcher a = Something | Matcher (Pattern a -> a -> [[MAtom]])
-data Matcher a = Something | Matcher a
-
-something :: Matcher a
-something = Something
+data MState = forall xs. MState [MAtom] (HList xs)
+-- data MState vs = forall vs' vs''. vs = vs' ++ vs'' => MState (MAtoms vs') (HList vs'')
+data MAtom = forall a m vs. MAtom (Pattern a m vs) a
+data Result = forall a. Result a
+data Matcher a = Matcher a
 
 data HList xs where
     HNil :: HList '[]
     HCons :: a -> HList as -> HList (a ': as)
 
+happend :: HList as -> HList bs -> HList (as :++: bs)
+happend (HCons x xs) ys = HCons x $ happend xs ys
+happend HNil ys = ys
+
+type family as :++: bs :: [k] where
+  (a ': as') :++: bs = a ': (as' :++: bs)
+  '[] :++: bs = bs
+
 --
 -- Patterns
 --
 
-newtype Pattern a m vars = Pattern { runPattern :: a -> [[MAtom]] }
+class Pattern a m vs where
+  runPattern ::
+  -- Pattern :: vs ~ x:xs => { runPattern :: a -> ([[MAtom]], x) } -> Pattern a m vs
 
 class BasePat a m where
-  wildcard :: Pattern a m (HList '[])
-  -- patVar :: String -> Pattern a '[a]
-  patVar :: String -> Pattern a m (HList '[a])
-  valuePat :: forall vs. Eq a => (HList vs -> a) -> Pattern a m (HList '[])
-  valuePat' :: Eq a => a -> Pattern a m (HList '[])
+  wildcard :: Pattern a m '[]
+  patVar :: String -> Pattern a m '[a]
+  valuePat :: forall vs. Eq a => (HList vs -> a) -> Pattern a m '[]
+  valuePat' :: Eq a => a -> Pattern a m '[]
 
--- data Pat = forall a. Pat (Pattern a)
---
+class CollectionPat a m where
+  nilPat       :: a ~ [b] => Pattern a m '[]
+  consPat      :: a ~ [b] => Pattern b m xs -> Pattern a m ys -> Pattern a m (xs :++: ys)
+  joinPat      :: a ~ [b] => Pattern a m xs -> Pattern a m ys -> Pattern a m (xs :++: ys)
+
 -- data Pattern a where
---   Wildcard     :: Pattern a
---   PatVar       :: String -> Pattern a
---   ValuePat     :: Eq a => ([Result] -> a) -> Pattern a
---   ValuePat'    :: Eq a => a -> Pattern a
---
 --   AndPat       :: Pattern a -> Pattern a -> Pattern a
 --   OrPat        :: Pattern a -> Pattern a -> Pattern a
 --   NotPat       :: Pattern a -> Pattern a
 --   LaterPat     :: Pattern a -> Pattern a
 --   PredicatePat :: (a -> Bool) -> Pattern a
---
---   NilPat       :: a ~ [b] => Pattern a
---   ConsPat      :: a ~ [b] => Pattern b -> Pattern a -> Pattern a
---   JoinPat      :: a ~ [b] => Pattern a -> Pattern a -> Pattern a
 --
 --   UserPat      :: String -> [Pat] -> Pattern a

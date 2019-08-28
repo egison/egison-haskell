@@ -12,7 +12,7 @@ module Control.Egison.Matcher (
 import           Control.Egison.Core
 import           Control.Egison.Match
 import           Control.Egison.QQ
-import           Unsafe.Coerce
+-- import           Unsafe.Coerce
 
 --
 -- Matchers
@@ -23,10 +23,26 @@ data Eql = Eql
 eql :: Matcher Eql
 eql = Matcher Eql
 
+data List a = List (Matcher a)
+
+list :: Matcher a -> Matcher (List a)
+list m = Matcher (List m)
+
 instance Eq a => BasePat a (Matcher Eql) where
-  wildcard = Pattern (\t -> [[MAtom wildcard something t]])
-  patVar x = Pattern (\t -> [[MAtom (patVar x) something t]])
-  valuePat' v = Pattern (\t -> [[] | v == t])
+  wildcard = Pattern (\t -> ([[]], HNil))
+  patVar _ = Pattern (\t -> ([[]], HCons t HNil))
+  valuePat' v = Pattern (\t -> ([[] | v == t], HNil))
+
+instance BasePat [a] (Matcher (List a)) where
+  wildcard = Pattern (\t -> ([[]], HNil))
+  patVar _ = Pattern (\t -> ([[]], HCons t HNil))
+  valuePat' v = Pattern (\t -> ([[] | v == t], HNil))
+
+instance CollectionPat [a] (Matcher (List a)) where
+  nilPat = Pattern (\t -> ([[] | null t], HNil))
+  consPat p1 p2 = Pattern (\t -> case t of
+                                   [] -> ([], HNil)
+                                   x:xs -> ([[MAtom p1 x, MAtom p2 xs]], HNil))
 
 -- eql :: Eq a => Matcher a
 -- eql = Matcher eql'
