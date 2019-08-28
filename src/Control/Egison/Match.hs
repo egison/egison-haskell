@@ -11,7 +11,7 @@ import           Unsafe.Coerce
 -- Pattern-matching algorithm
 --
 
-matchAll :: a -> Matcher m -> [(Pattern a (Matcher m) vs, (HList vs) -> b)] -> [b]
+matchAll :: a -> Matcher m -> [(Pattern a m vs, (HList vs) -> b)] -> [b]
 matchAll tgt _ =
   foldr (\(pat, f) matches ->
     map f (processMStatesAll [[MState [MAtom pat tgt] HNil]]) ++ matches) []
@@ -37,12 +37,11 @@ processMStates []          = []
 processMStates (mstate:ms) = [processMState mstate, ms]
 
 processMState :: MState -> [MState]
-processMState (MState (MAtom (Pattern {runPattern = f}) tgt:atoms) rs) =
-  let (matomss, x) = f tgt in
-  let rs' = if x == () then rs else happend rs (HCons x HNil) in
-  map (\newAtoms -> MState (newAtoms ++ atoms) rs') matomss
--- processMState (MState (MAtom wildcard something t:atoms) rs) = [MState atoms rs]
--- processMState (MState (MAtom (patVar _) something t:atoms) rs) = [MState atoms (rs ++ [Result t])]
+processMState (MState (MAtom (Pattern f) tgt:atoms) rs) =
+  let (matomss, mb) = f tgt in
+  case mb of
+    Nothing -> map (\newAtoms -> MState (newAtoms ++ atoms) rs) matomss
+    Just x -> map (\newAtoms -> MState (newAtoms ++ atoms) $ happend rs (HCons x HNil)) matomss
 -- processMState (MState (MAtom (valuePat f) (Matcher m) t:atoms) rs) =
 --   let next = m (ValuePat' $ f rs) t in
 --       map (\nt -> MState (nt ++ atoms) rs) next
@@ -51,5 +50,3 @@ processMState (MState (MAtom (Pattern {runPattern = f}) tgt:atoms) rs) =
 -- processMState (MState (MAtom (NotPat p) m t:atoms) rs) = [MState atoms rs | null $ processMStatesAll [[MState [MAtom p m t] rs]]]
 -- processMState (MState (MAtom (LaterPat p) m t:atoms) rs) = [MState (atoms ++ [MAtom p m t]) rs]
 -- processMState (MState (MAtom (PredicatePat f) _ t:atoms) rs) = [MState atoms rs | f t]
--- processMState (MState (MAtom p (Matcher m) t:atoms) rs) =
---   map (\newAtoms -> MState (newAtoms ++ atoms) rs) (m p t)

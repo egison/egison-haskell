@@ -3,9 +3,9 @@
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE KindSignatures            #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
-{-# LANGUAGE TypeOperators             #-}
 {-# LANGUAGE PolyKinds                 #-}
-{-# LANGUAGE TypeFamilies                 #-}
+{-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE TypeOperators             #-}
 
 module Control.Egison.Core (
   MState(..),
@@ -18,7 +18,7 @@ module Control.Egison.Core (
   CollectionPat(..),
   ) where
 
-import Data.Maybe
+import           Data.Maybe
 
 --
 -- Matching states
@@ -27,7 +27,6 @@ import Data.Maybe
 data MState = forall xs. MState [MAtom] (HList xs)
 -- data MState vs = forall vs' vs''. vs = vs' ++ vs'' => MState (MAtoms vs') (HList vs'')
 data MAtom = forall a m vs. MAtom (Pattern a m vs) a
-data Result = forall a. Result a
 data Matcher a = Matcher a
 
 data HList xs where
@@ -36,9 +35,9 @@ data HList xs where
 
 happend :: HList as -> HList bs -> HList (as :++: bs)
 happend (HCons x xs) ys = HCons x $ happend xs ys
-happend HNil ys = ys
+happend HNil ys         = ys
 
-type family as :++: bs :: [k] where
+type family as :++: bs :: [*] where
   (a ': as') :++: bs = a ': (as' :++: bs)
   '[] :++: bs = bs
 
@@ -46,20 +45,18 @@ type family as :++: bs :: [k] where
 -- Patterns
 --
 
-class Pattern a m vs where
-  runPattern ::
-  -- Pattern :: vs ~ x:xs => { runPattern :: a -> ([[MAtom]], x) } -> Pattern a m vs
+data Pattern a m vs = forall x. Pattern (a -> ([[MAtom]], Maybe x))
 
 class BasePat a m where
   wildcard :: Pattern a m '[]
   patVar :: String -> Pattern a m '[a]
-  valuePat :: forall vs. Eq a => (HList vs -> a) -> Pattern a m '[]
+  -- valuePat :: forall vs. Eq a => (HList vs -> a) -> Pattern a m '[]
   valuePat' :: Eq a => a -> Pattern a m '[]
 
 class CollectionPat a m where
   nilPat       :: a ~ [b] => Pattern a m '[]
   consPat      :: a ~ [b] => Pattern b m xs -> Pattern a m ys -> Pattern a m (xs :++: ys)
-  joinPat      :: a ~ [b] => Pattern a m xs -> Pattern a m ys -> Pattern a m (xs :++: ys)
+  -- joinPat      :: a ~ [b] => Pattern a m xs -> Pattern a m ys -> Pattern a m (xs :++: ys)
 
 -- data Pattern a where
 --   AndPat       :: Pattern a -> Pattern a -> Pattern a

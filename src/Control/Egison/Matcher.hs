@@ -29,28 +29,20 @@ list :: Matcher a -> Matcher (List a)
 list m = Matcher (List m)
 
 instance Eq a => BasePat a (Matcher Eql) where
-  wildcard = Pattern (\t -> ([[]], HNil))
-  patVar _ = Pattern (\t -> ([[]], HCons t HNil))
-  valuePat' v = Pattern (\t -> ([[] | v == t], HNil))
+  wildcard = Pattern (\t -> ([[]], Nothing))
+  patVar _ = Pattern (\t -> ([[]], Just t))
+  valuePat' v = Pattern (\t -> ([[] | v == t], Nothing))
 
 instance BasePat [a] (Matcher (List a)) where
-  wildcard = Pattern (\t -> ([[]], HNil))
-  patVar _ = Pattern (\t -> ([[]], HCons t HNil))
-  valuePat' v = Pattern (\t -> ([[] | v == t], HNil))
+  wildcard = Pattern (\t -> ([[]], Nothing))
+  patVar _ = Pattern (\t -> ([[]], Just t))
+  valuePat' v = Pattern (\t -> ([[] | v == t], Nothing))
 
 instance CollectionPat [a] (Matcher (List a)) where
-  nilPat = Pattern (\t -> ([[] | null t], HNil))
+  nilPat = Pattern (\t -> ([[] | null t], Nothing))
   consPat p1 p2 = Pattern (\t -> case t of
-                                   [] -> ([], HNil)
-                                   x:xs -> ([[MAtom p1 x, MAtom p2 xs]], HNil))
-
--- eql :: Eq a => Matcher a
--- eql = Matcher eql'
---
--- eql' :: Eq a => Pattern a -> a -> [[MAtom]]
--- eql' p@Wildcard t    = [[MAtom p something t]]
--- eql' p@(PatVar _) t  = [[MAtom p something t]]
--- eql' (ValuePat' v) t = [[] | v == t]
+                                   [] -> ([], Nothing)
+                                   x:xs -> ([[MAtom p1 x, MAtom p2 xs]], Nothing))
 
 -- integer :: Eq a => Matcher a
 -- integer = eql
@@ -59,11 +51,6 @@ instance CollectionPat [a] (Matcher (List a)) where
 -- list m = Matcher (list' m)
 --
 -- list' :: Matcher a -> Pattern [a] -> [a] -> [[MAtom]]
--- list' _ p@Wildcard t = [[MAtom p something t]]
--- list' _ p@(PatVar _) t = [[MAtom p something t]]
--- list' _ NilPat t = [[] | null t]
--- list' _ (ConsPat _ _) [] = []
--- list' m (ConsPat p1 p2) (t:ts) = [[MAtom p1 m t, MAtom p2 (list m) ts]]
 -- list' m (JoinPat p1 p2) t = map (\(hs, ts) -> [MAtom p1 (list m) hs, MAtom p2 (list m) ts]) (unjoin t)
 -- list' m (UserPat "Join" [Pat p1, Pat p2]) t =
 --   let p1' = unsafeCoerce p1 in

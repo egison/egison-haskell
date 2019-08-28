@@ -21,7 +21,7 @@ import           Useful.Dictionary
 mc :: QuasiQuoter
 mc = QuasiQuoter { quoteExp = \s -> do
                       let (pat, exp) = strSplit "=>" s
-                      e1 <- case parseExp (changeValuePat (changePatVar pat)) of
+                      e1 <- case parseExp (changeValuePat (changepatVar pat)) of
                               Left _ -> fail "Could not parse pattern expression."
                               Right exp -> return exp
                       e2 <- case parseExp exp of
@@ -32,37 +32,37 @@ mc = QuasiQuoter { quoteExp = \s -> do
                   , quoteType = undefined
                   , quoteDec = undefined }
 
-changePatVar :: String -> String
-changePatVar pat = subRegex (mkRegex "\\$([a-zA-Z0-9]+)") pat "(PatVar \"\\1\")"
+changepatVar :: String -> String
+changepatVar pat = subRegex (mkRegex "\\$([a-zA-Z0-9]+)") pat "(patVar \"\\1\")"
 
 changeValuePat :: String -> String
-changeValuePat pat = subRegex (mkRegex "\\#(\\([^)]+\\)|\\[[^)]+\\]|[a-zA-Z0-9]+)") pat "(ValuePat \\1)"
+changeValuePat pat = subRegex (mkRegex "\\#(\\([^)]+\\)|\\[[^)]+\\]|[a-zA-Z0-9]+)") pat "(valuePat \\1)"
 
 mcChange :: Exp -> Exp -> Q Exp
 mcChange pat expr = do
-  let (vars, xs) = extractPatVars [pat] []
+  let (vars, xs) = extractpatVars [pat] []
   [| ($(fst <$> changePat pat (map (`take` vars) xs)), $(changeExp vars expr)) |]
 
 -- extract patvars from pattern
-extractPatVars :: [Exp] -> [String] -> ([String], [Int])
-extractPatVars [] vars = (vars, [])
-extractPatVars (ParensE x:xs) vars = extractPatVars (x:xs) vars
-extractPatVars (AppE (ConE name) p:xs) vars
-  | nameBase name == "PatVar" = case p of (LitE (StringL s)) -> extractPatVars xs (vars ++ [s])
-  | nameBase name == "ValuePat" = let (vs, ns) = extractPatVars xs vars in (vs, length vars:ns)
-  | nameBase name == "NotPat" = extractPatVars (p:xs) vars
+extractpatVars :: [Exp] -> [String] -> ([String], [Int])
+extractpatVars [] vars = (vars, [])
+extractpatVars (ParensE x:xs) vars = extractpatVars (x:xs) vars
+extractpatVars (AppE (ConE name) p:xs) vars
+  | nameBase name == "patVar" = case p of (LitE (StringL s)) -> extractpatVars xs (vars ++ [s])
+  | nameBase name == "valuePat" = let (vs, ns) = extractpatVars xs vars in (vs, length vars:ns)
+  | nameBase name == "NotPat" = extractpatVars (p:xs) vars
   | nameBase name == "LaterPat" =
-      let (vs1, ns1) = extractPatVars xs vars in
-      let (vs2, ns2) = extractPatVars [p] vs1 in (vs2, ns2 ++ ns1)
-  | otherwise = extractPatVars (p:xs) vars
-extractPatVars (AppE (AppE (ConE name) p1) p2:xs) vars = extractPatVars (p1:p2:xs) vars
-extractPatVars (AppE (VarE _) p:xs) vars = extractPatVars (p:xs) vars
-extractPatVars (InfixE (Just (ConE name)) (VarE op) (Just p):xs) vars = extractPatVars (AppE (ConE name) p:xs) vars
-extractPatVars (UInfixE (ConE name) (VarE op) y:xs) vs = extractPatVars (AppE (ConE name) y:xs) vs
-extractPatVars (UInfixE (UInfixE x (VarE op) y) z w:xs) vs = extractPatVars (AppE x (UInfixE y z w):xs) vs
-extractPatVars (SigE x typ:xs) vs = extractPatVars (x:xs) vs
-extractPatVars (ListE ls:xs) vs = extractPatVars (ls ++ xs) vs
-extractPatVars (_:xs) vars = extractPatVars xs vars
+      let (vs1, ns1) = extractpatVars xs vars in
+      let (vs2, ns2) = extractpatVars [p] vs1 in (vs2, ns2 ++ ns1)
+  | otherwise = extractpatVars (p:xs) vars
+extractpatVars (AppE (AppE (ConE name) p1) p2:xs) vars = extractpatVars (p1:p2:xs) vars
+extractpatVars (AppE (VarE _) p:xs) vars = extractpatVars (p:xs) vars
+extractpatVars (InfixE (Just (ConE name)) (VarE op) (Just p):xs) vars = extractpatVars (AppE (ConE name) p:xs) vars
+extractpatVars (UInfixE (ConE name) (VarE op) y:xs) vs = extractpatVars (AppE (ConE name) y:xs) vs
+extractpatVars (UInfixE (UInfixE x (VarE op) y) z w:xs) vs = extractpatVars (AppE x (UInfixE y z w):xs) vs
+extractpatVars (SigE x typ:xs) vs = extractpatVars (x:xs) vs
+extractpatVars (ListE ls:xs) vs = extractpatVars (ls ++ xs) vs
+extractpatVars (_:xs) vars = extractpatVars xs vars
 
 -- change ValuePat e to \[Result x] -> let x' = unsafeCoerce x in e
 changePat :: Exp -> [[String]] -> Q (Exp, [[String]])
@@ -95,7 +95,7 @@ changeExp vars expr = do
   vars'' <- mapM (\s -> newName $ s ++ "'") vars
   return $ LamE [f vars'] expr
 
--- TODO: \(x ::: y ::: HNil) -> hoge
+-- \(x ::: y ::: HNil) -> hoge
 f :: [Name] -> Pat
 f []     = ConP 'HNil []
 f (x:xs) = InfixP (VarP x) 'HCons $ f xs
