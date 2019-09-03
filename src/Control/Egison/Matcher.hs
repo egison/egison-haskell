@@ -13,7 +13,6 @@ module Control.Egison.Matcher (
 import           Control.Egison.Core
 import           Control.Egison.Match
 import           Control.Egison.QQ
--- import           Unsafe.Coerce
 
 --
 -- Matchers
@@ -29,25 +28,21 @@ data List a = List (Matcher a)
 list :: Matcher a -> Matcher (List a)
 list m = Matcher (List m)
 
--- instance Eq a => BasePat a (Matcher Eql) where
-instance BasePat [Char] (Matcher Eql) where
-  wildcard = Pattern (\t -> ([[]], Unit))
-  patVar _ = Pattern (\t -> ([[]], Just t))
-  valuePat' v = Pattern (\t -> ([[] | v == t], Unit))
+instance Eq a => BasePat (Matcher Eql) a where
+  wildcard = Pattern (\t -> ([MNil], Unit))
+  patVar _ = Pattern (\t -> ([MNil], t))
+  valuePat' v = Pattern (\t -> ([MNil | v == t], Unit))
 
-instance BasePat [a] (Matcher (List a)) where
-  wildcard = Pattern (\t -> ([[]], Unit))
-  patVar _ = Pattern (\t -> ([[]], Just t))
-  valuePat' v = Pattern (\t -> ([[] | v == t], Unit))
+instance BasePat (Matcher (List a)) [a] where
+  wildcard = Pattern (\t -> ([MNil], Unit))
+  patVar _ = Pattern (\t -> ([MNil], t))
+  valuePat' v = Pattern (\t -> ([MNil | v == t], Unit))
 
-instance CollectionPat [a] (Matcher (List a)) where
-  nilPat = Pattern (\t -> ([[] | null t], Unit))
+instance CollectionPat (Matcher (List a)) [a] where
+  nilPat = Pattern (\t -> ([MNil | null t], Unit))
   consPat p1 p2 = Pattern (\t -> case t of
                                    [] -> ([], Unit)
-                                   x:xs -> ([[MAtom p1 x, MAtom p2 xs]], Unit))
-
--- integer :: Eq a => Matcher a
--- integer = eql
+                                   x:xs -> ([MCons (MAtom p1 x) $ MSingle (MAtom p2 xs)], Unit))
 
 -- list :: Matcher a -> Matcher [a]
 -- list m = Matcher (list' m)

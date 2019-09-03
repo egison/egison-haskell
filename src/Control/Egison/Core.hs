@@ -26,7 +26,6 @@ import           Data.Maybe
 -- Matching states
 --
 
--- data MState = forall xs. MState [MAtom] (HList xs)
 data MState vs where
   MState :: vs ~ (xs :++: ys) => HList xs -> MList ys -> MState vs
 
@@ -36,12 +35,12 @@ data Matcher a = Matcher a
 data HList xs where
   HNil :: HList '[]
   HCons :: a -> HList as -> HList (a ': as)
-  HJoin :: HList as -> HList bs -> HList (as :++: bs)
 
 data MList vs where
   MNil :: MList '[]
   MSingle :: MAtom xs -> MList xs
   MCons :: MAtom xs -> MList ys -> MList (xs :++: ys)
+  MJoin :: MList xs -> MList ys -> MList (xs :++: ys)
 
 happend :: HList as -> HList bs -> HList (as :++: bs)
 happend (HCons x xs) ys = HCons x $ happend xs ys
@@ -55,26 +54,20 @@ type family as :++: bs :: [*] where
 -- Patterns
 --
 
--- data Pattern a m vs = forall x. Pattern (a -> ([[MAtom]], Maybe x))
 data Unit = Unit
 
 data Pattern a m vs where
-  Pattern :: vs ~ (x ': xs) => (a -> ([[MAtom xs]], x)) -> Pattern a m vs
--- data Unit = Unit
+  Pattern :: vs ~ (x ': xs) => (a -> ([MList xs], x)) -> Pattern a m vs
 
--- type family Pattern a m vs where
---   Pattern a m '[] = Pattern (a -> ([[MAtom]], Unit))
---   Pattern a m (x ': xs) = Pattern (a -> ([[MAtom]], Maybe x))
-
-class BasePat a m where
+class BasePat m a where
   wildcard :: Pattern a m '[Unit]
   patVar :: String -> Pattern a m '[a]
   -- valuePat :: forall vs. Eq a => (HList vs -> a) -> Pattern a m '[]
   valuePat' :: Eq a => a -> Pattern a m '[Unit]
 
-class CollectionPat a m where
+class CollectionPat m a where
   nilPat       :: a ~ [b] => Pattern a m '[Unit]
-  consPat      :: a ~ [b] => Pattern b m xs -> Pattern a m ys -> Pattern a m (xs :++: ys)
+  consPat      :: a ~ [b] => Pattern b m xs -> Pattern a m ys -> Pattern a m (Unit ': (xs :++: ys))
   -- joinPat      :: a ~ [b] => Pattern a m xs -> Pattern a m ys -> Pattern a m (xs :++: ys)
 
 -- data Pattern a where

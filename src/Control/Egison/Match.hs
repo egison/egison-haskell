@@ -12,15 +12,22 @@ import           Unsafe.Coerce
 -- Pattern-matching algorithm
 --
 
-matchAll :: a -> Matcher m -> [(Pattern a m vs, (HList vs) -> b)] -> [b]
+matchAll :: a -> Matcher m -> [(Pattern a (Matcher m) vs, (HList vs) -> b)] -> [b]
 matchAll tgt _ =
   foldr (\(pat, f) matches ->
-    map f (processMStatesAll [[MState HNil (MSingle (MAtom pat tgt))]]) ++ matches) []
-    -- map f (processMStatesAll [[MState [MAtom pat tgt] HNil]]) ++ matches) []
+    -- let results = map g $ processMStatesAll [[MState HNil (MSingle (MAtom pat tgt))]] in
+    let results = processMStatesAll [[MState HNil (MSingle (MAtom pat tgt))]] in
+    map f results ++ matches) []
+ -- where
+ --   g :: HList as -> HList bs
+ --   g HNil = unsafeCoerce HNil
+ --   g (HCons x xs) = case x of
+ --                      Unit -> unsafeCoerce $ g xs
+ --                      _ -> unsafeCoerce $ HCons x $ g xs
 
--- match :: a -> Matcher a -> [(Pattern a, HList vs -> b)] -> b
--- match t m xs = head $ matchAll t m xs
---
+match :: a -> Matcher m -> [(Pattern a (Matcher m) vs, HList vs -> b)] -> b
+match tgt m xs = head $ matchAll tgt m xs
+
 processMStatesAll :: [[MState vs]] -> [HList vs]
 processMStatesAll [] = []
 processMStatesAll streams =
@@ -41,22 +48,16 @@ processMStates []          = []
 processMStates (mstate:ms) = [processMState mstate, ms]
 
 processMState :: MState vs -> [MState vs]
+processMState (MState rs MNil) = [MState rs MNil]
 processMState (MState rs (MSingle (MAtom (Pattern f) tgt))) =
-  let (matomss, mb) = f tgt in
-  case mb of
-    -- Unit -> mmap (\newAtoms -> MState rs newAtoms) matomss
-    Unit -> g1 matomss
-    x -> map (\newAtoms -> MState (happend rs (HCons x HNil)) newAtoms) matomss
+  let (matomss, x) = f tgt in
+  map (\newAtoms -> unsafeCoerce $ MState (happend rs (HCons x HNil)) newAtoms) matomss
 processMState (MState rs (MCons (MAtom (Pattern f) tgt) atoms)) =
-  let (matomss, mb) = f tgt in
-  case mb of
-    Unit -> mmap (\newAtoms -> MState rs (newAtoms ++ atoms)) matomss
-    x -> map (\newAtoms -> MState (happend rs (HCons x HNil)) (newAtoms ++ atoms)) matomss
- where
-   g1 ::
-  mmap f MNil = MNil
-  mmap f (MSingle matom) = MSingle $ f matom
-  mmap f (MCons matom ms) = MCons (f matom) ms
+  let (matomss, x) = f tgt in
+  map (\newAtoms -> unsafeCoerce $ MState (happend rs (HCons x HNil)) (MJoin newAtoms atoms)) matomss
+processMState (MState rs (MJoin matoms1 matoms2)) =
+  let mstates = processMState (MState rs matoms1) in
+  map (\(MState rs' ms) -> unsafeCoerce $ MState rs' $ MJoin ms matoms2) mstates
 
 -- processMState (MState (MAtom (valuePat f) (Matcher m) t:atoms) rs) =
 --   let next = m (ValuePat' $ f rs) t in
