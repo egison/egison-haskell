@@ -1,3 +1,4 @@
+{-# LANGUAGE GADTs                     #-}
 module Control.Egison.Match (
   matchAll,
   -- match,
@@ -14,34 +15,49 @@ import           Unsafe.Coerce
 matchAll :: a -> Matcher m -> [(Pattern a m vs, (HList vs) -> b)] -> [b]
 matchAll tgt _ =
   foldr (\(pat, f) matches ->
-    map f (processMStatesAll [[MState [MAtom pat tgt] HNil]]) ++ matches) []
+    map f (processMStatesAll [[MState HNil (MSingle (MAtom pat tgt))]]) ++ matches) []
+    -- map f (processMStatesAll [[MState [MAtom pat tgt] HNil]]) ++ matches) []
 
 -- match :: a -> Matcher a -> [(Pattern a, HList vs -> b)] -> b
 -- match t m xs = head $ matchAll t m xs
 --
-processMStatesAll :: [[MState]] -> [HList vs]
+processMStatesAll :: [[MState vs]] -> [HList vs]
 processMStatesAll [] = []
-processMStatesAll streams = let (results, streams') = extractResults $ concatMap processMStates streams in results ++ processMStatesAll streams'
+processMStatesAll streams =
+  let (results, streams') = extractResults $ concatMap processMStates streams
+   in results ++ processMStatesAll streams'
 
-extractResults :: [[MState]] -> ([HList vs], [[MState]])
+extractResults :: [[MState vs]] -> ([HList vs], [[MState vs]])
 extractResults = foldr extractResults' ([], [])
  where
-   extractResults' :: [MState] -> ([HList vs], [[MState]]) -> ([HList vs], [[MState]])
+   extractResults' :: [MState vs] -> ([HList vs], [[MState vs]]) -> ([HList vs], [[MState vs]])
    extractResults' [] (rss, mss) = (rss, mss)
-   extractResults' (MState [] rs:ms) (rss, mss) =
+   extractResults' (MState rs MNil:ms) (rss, mss) =
      let rs' = unsafeCoerce rs in extractResults' ms (rs':rss, mss)
    extractResults' ms (rss, mss) = (rss, ms:mss)
 
-processMStates :: [MState] -> [[MState]]
+processMStates :: [MState vs] -> [[MState vs]]
 processMStates []          = []
 processMStates (mstate:ms) = [processMState mstate, ms]
 
-processMState :: MState -> [MState]
-processMState (MState (MAtom (Pattern f) tgt:atoms) rs) =
+processMState :: MState vs -> [MState vs]
+processMState (MState rs (MSingle (MAtom (Pattern f) tgt))) =
   let (matomss, mb) = f tgt in
   case mb of
-    Nothing -> map (\newAtoms -> MState (newAtoms ++ atoms) rs) matomss
-    Just x -> map (\newAtoms -> MState (newAtoms ++ atoms) $ happend rs (HCons x HNil)) matomss
+    -- Unit -> mmap (\newAtoms -> MState rs newAtoms) matomss
+    Unit -> g1 matomss
+    x -> map (\newAtoms -> MState (happend rs (HCons x HNil)) newAtoms) matomss
+processMState (MState rs (MCons (MAtom (Pattern f) tgt) atoms)) =
+  let (matomss, mb) = f tgt in
+  case mb of
+    Unit -> mmap (\newAtoms -> MState rs (newAtoms ++ atoms)) matomss
+    x -> map (\newAtoms -> MState (happend rs (HCons x HNil)) (newAtoms ++ atoms)) matomss
+ where
+   g1 ::
+  mmap f MNil = MNil
+  mmap f (MSingle matom) = MSingle $ f matom
+  mmap f (MCons matom ms) = MCons (f matom) ms
+
 -- processMState (MState (MAtom (valuePat f) (Matcher m) t:atoms) rs) =
 --   let next = m (ValuePat' $ f rs) t in
 --       map (\nt -> MState (nt ++ atoms) rs) next

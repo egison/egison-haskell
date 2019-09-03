@@ -4,6 +4,7 @@
 
 module Control.Egison.Matcher (
   eql,
+  Eql(..),
   -- integer,
   -- list,
   -- multiset,
@@ -28,21 +29,22 @@ data List a = List (Matcher a)
 list :: Matcher a -> Matcher (List a)
 list m = Matcher (List m)
 
-instance Eq a => BasePat a (Matcher Eql) where
-  wildcard = Pattern (\t -> ([[]], Nothing))
+-- instance Eq a => BasePat a (Matcher Eql) where
+instance BasePat [Char] (Matcher Eql) where
+  wildcard = Pattern (\t -> ([[]], Unit))
   patVar _ = Pattern (\t -> ([[]], Just t))
-  valuePat' v = Pattern (\t -> ([[] | v == t], Nothing))
+  valuePat' v = Pattern (\t -> ([[] | v == t], Unit))
 
 instance BasePat [a] (Matcher (List a)) where
-  wildcard = Pattern (\t -> ([[]], Nothing))
+  wildcard = Pattern (\t -> ([[]], Unit))
   patVar _ = Pattern (\t -> ([[]], Just t))
-  valuePat' v = Pattern (\t -> ([[] | v == t], Nothing))
+  valuePat' v = Pattern (\t -> ([[] | v == t], Unit))
 
 instance CollectionPat [a] (Matcher (List a)) where
-  nilPat = Pattern (\t -> ([[] | null t], Nothing))
+  nilPat = Pattern (\t -> ([[] | null t], Unit))
   consPat p1 p2 = Pattern (\t -> case t of
-                                   [] -> ([], Nothing)
-                                   x:xs -> ([[MAtom p1 x, MAtom p2 xs]], Nothing))
+                                   [] -> ([], Unit)
+                                   x:xs -> ([[MAtom p1 x, MAtom p2 xs]], Unit))
 
 -- integer :: Eq a => Matcher a
 -- integer = eql
