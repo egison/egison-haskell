@@ -1,4 +1,5 @@
-{-# LANGUAGE GADTs                     #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE DataKinds #-}
 module Control.Egison.Match (
   matchAll,
   -- match,
@@ -12,7 +13,7 @@ import           Unsafe.Coerce
 -- Pattern-matching algorithm
 --
 
-matchAll :: a -> Matcher m -> [(Pattern a (Matcher m) vs, (HList vs) -> b)] -> [b]
+matchAll :: a -> Matcher m -> [(Pattern a (Matcher m) '[] vs, (HList vs) -> b)] -> [b]
 matchAll tgt _ =
   foldr (\(pat, f) matches ->
     -- let results = map g $ processMStatesAll [[MState HNil (MSingle (MAtom pat tgt))]] in
@@ -25,7 +26,7 @@ matchAll tgt _ =
  --                      Unit -> unsafeCoerce $ g xs
  --                      _ -> unsafeCoerce $ HCons x $ g xs
 
-match :: a -> Matcher m -> [(Pattern a (Matcher m) vs, HList vs -> b)] -> b
+match :: a -> Matcher m -> [(Pattern a (Matcher m) '[] vs, HList vs -> b)] -> b
 match tgt m xs = head $ matchAll tgt m xs
 
 processMStatesAll :: [[MState vs]] -> [HList vs]
@@ -50,10 +51,12 @@ processMStates (mstate:ms) = [processMState mstate, ms]
 processMState :: MState vs -> [MState vs]
 processMState (MState rs MNil) = [MState rs MNil]
 processMState (MState rs (MSingle (MAtom (Pattern f) tgt))) =
-  let (matomss, x) = f tgt in
+  let rs' = unsafeCoerce rs in
+  let (matomss, x) = f tgt rs' in
   map (\newAtoms -> unsafeCoerce $ MState (happend rs (HCons x HNil)) newAtoms) matomss
 processMState (MState rs (MCons (MAtom (Pattern f) tgt) atoms)) =
-  let (matomss, x) = f tgt in
+  let rs' = unsafeCoerce rs in
+  let (matomss, x) = f tgt rs' in
   map (\newAtoms -> unsafeCoerce $ MState (happend rs (HCons x HNil)) (MJoin newAtoms atoms)) matomss
 processMState (MState rs (MJoin matoms1 matoms2)) =
   let mstates = processMState (MState rs matoms1) in

@@ -6,7 +6,7 @@ module Control.Egison.Matcher (
   eql,
   Eql(..),
   -- integer,
-  -- list,
+  list,
   -- multiset,
   ) where
 
@@ -29,18 +29,18 @@ list :: Matcher a -> Matcher (List a)
 list m = Matcher (List m)
 
 instance Eq a => BasePat (Matcher Eql) a where
-  wildcard = Pattern (\t -> ([MNil], Unit))
-  patVar _ = Pattern (\t -> ([MNil], t))
-  valuePat' v = Pattern (\t -> ([MNil | v == t], Unit))
+  wildcard = Pattern (\t ctx -> ([MNil], Unit))
+  patVar _ = Pattern (\t ctx -> ([MNil], t))
+  valuePat f = Pattern (\t ctx -> ([MNil | f ctx == t], Unit))
 
-instance BasePat (Matcher (List a)) [a] where
-  wildcard = Pattern (\t -> ([MNil], Unit))
-  patVar _ = Pattern (\t -> ([MNil], t))
-  valuePat' v = Pattern (\t -> ([MNil | v == t], Unit))
+instance BasePat (Matcher (List m)) [a] where
+  wildcard = Pattern (\t ctx -> ([MNil], Unit))
+  patVar _ = Pattern (\t ctx -> ([MNil], t))
+  valuePat f = Pattern (\t ctx -> ([MNil | f ctx == t], Unit))
 
-instance CollectionPat (Matcher (List a)) [a] where
-  nilPat = Pattern (\t -> ([MNil | null t], Unit))
-  consPat p1 p2 = Pattern (\t -> case t of
+instance CollectionPat (Matcher (List m)) [a] where
+  nilPat = Pattern (\t ctx -> ([MNil | null t], Unit))
+  consPat p1 p2 = Pattern (\t ctx -> case t of
                                    [] -> ([], Unit)
                                    x:xs -> ([MCons (MAtom p1 x) $ MSingle (MAtom p2 xs)], Unit))
 
