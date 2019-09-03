@@ -17,6 +17,7 @@ module Control.Egison.Core (
   Unit(..),
   Pattern(..),
   BasePat(..),
+  List(..),
   CollectionPat(..),
   ) where
 
@@ -64,9 +65,11 @@ class BasePat m a where
   patVar :: String -> Pattern a m ctx '[a]
   valuePat :: Eq a => (HList ctx -> a) -> Pattern a m ctx '[Unit]
 
+data List a = List a
+
 class CollectionPat m a where
   nilPat       :: a ~ [b] => Pattern a m ctx '[Unit]
-  consPat      :: a ~ [b] => Pattern b m ctx xs -> Pattern a m (ctx :++: xs) ys -> Pattern a m (ctx :++: xs :++: ys) (Unit ': (xs :++: ys))
+  consPat      :: a ~ [b] => m ~ (Matcher (List m')) => Pattern b (Matcher m') ctx xs -> Pattern a m (ctx :++: xs) ys -> Pattern a m ctx (Unit ': (xs :++: ys))
   -- joinPat      :: a ~ [b] => Pattern a m xs -> Pattern a m ys -> Pattern a m (xs :++: ys)
 
 -- data Pattern a where

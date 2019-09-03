@@ -20,7 +20,7 @@ matchAll tgt _ =
     let results = processMStatesAll [[MState HNil (MSingle (MAtom pat tgt))]] in
     map f results ++ matches) []
  -- where
- --   g :: HList as -> HList bs
+ --   g :: HList vs -> HList vs'
  --   g HNil = unsafeCoerce HNil
  --   g (HCons x xs) = case x of
  --                      Unit -> unsafeCoerce $ g xs
@@ -58,6 +58,7 @@ processMState (MState rs (MCons (MAtom (Pattern f) tgt) atoms)) =
   let rs' = unsafeCoerce rs in
   let (matomss, x) = f tgt rs' in
   map (\newAtoms -> unsafeCoerce $ MState (happend rs (HCons x HNil)) (MJoin newAtoms atoms)) matomss
+processMState (MState rs (MJoin MNil matoms2)) = processMState (MState rs matoms2)
 processMState (MState rs (MJoin matoms1 matoms2)) =
   let mstates = processMState (MState rs matoms1) in
   map (\(MState rs' ms) -> unsafeCoerce $ MState rs' $ MJoin ms matoms2) mstates

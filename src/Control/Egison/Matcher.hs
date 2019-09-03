@@ -23,10 +23,8 @@ data Eql = Eql
 eql :: Matcher Eql
 eql = Matcher Eql
 
-data List a = List (Matcher a)
-
 list :: Matcher a -> Matcher (List a)
-list m = Matcher (List m)
+list (Matcher m) = Matcher (List m)
 
 instance Eq a => BasePat (Matcher Eql) a where
   wildcard = Pattern (\t ctx -> ([MNil], Unit))
@@ -44,10 +42,6 @@ instance CollectionPat (Matcher (List m)) [a] where
                                    [] -> ([], Unit)
                                    x:xs -> ([MCons (MAtom p1 x) $ MSingle (MAtom p2 xs)], Unit))
 
--- list :: Matcher a -> Matcher [a]
--- list m = Matcher (list' m)
---
--- list' :: Matcher a -> Pattern [a] -> [a] -> [[MAtom]]
 -- list' m (JoinPat p1 p2) t = map (\(hs, ts) -> [MAtom p1 (list m) hs, MAtom p2 (list m) ts]) (unjoin t)
 -- list' m (UserPat "Join" [Pat p1, Pat p2]) t =
 --   let p1' = unsafeCoerce p1 in
