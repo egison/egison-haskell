@@ -23,8 +23,7 @@ cabal.project.local~
 .HTF/
 .ghc.environment.*
 
-Match
-PPTest
-
 sample/**
 !sample/*.hs
+
+stack.yaml.lock
