@@ -2,7 +2,7 @@
 {-# LANGUAGE GADTs     #-}
 module Control.Egison.Match (
   matchAll,
-  -- match,
+  match,
   processMStatesAll,
   ) where
 
@@ -13,13 +13,13 @@ import           Unsafe.Coerce
 -- Pattern-matching algorithm
 --
 
-matchAll :: a -> Matcher m -> [(Pattern a (Matcher m) '[] vs, (HList vs) -> b)] -> [b]
-matchAll tgt (Matcher m) =
-  foldr (\(pat, f) matches ->
-    let results = processMStatesAll [[MState HNil (MCons (MAtom pat tgt m) MNil)]] in
-    map f results ++ matches) []
+matchAll :: a -> Matcher m -> PList a m b -> [b]
+matchAll tgt (Matcher m) PNil = []
+matchAll tgt (Matcher m) (PCons (pat, f) ps) =
+  let results = processMStatesAll [[MState HNil (MCons (MAtom pat tgt m) MNil)]] in
+  map f results ++ (matchAll tgt (Matcher m) ps)
 
-match :: a -> Matcher m -> [(Pattern a (Matcher m) '[] vs, HList vs -> b)] -> b
+match :: a -> Matcher m -> PList a m b -> b
 match tgt m xs = head $ matchAll tgt m xs
 
 processMStatesAll :: [[MState vs]] -> [HList vs]
@@ -58,7 +58,7 @@ processMState (MState rs (MCons (MAtom pat tgt m) atoms)) =
       [MState rs (MCons (MAtom p1 tgt m) atoms), MState rs (MCons (MAtom p2 tgt m) atoms)]
     NotPat p ->
       [MState rs atoms | null $ processMStatesAll [[MState rs $ MCons (MAtom p tgt m) MNil]]]
-    PredicatePat f -> [MState rs atoms | f tgt rs]
+    PredicatePat f -> [MState rs atoms | f rs tgt]
 processMState (MState rs (MJoin MNil matoms2)) = processMState (MState rs matoms2)
 processMState (MState rs (MJoin matoms1 matoms2)) =
   let mstates = processMState (MState rs matoms1) in

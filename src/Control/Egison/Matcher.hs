@@ -1,9 +1,12 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE QuasiQuotes           #-}
 
 module Control.Egison.Matcher (
   eql,
+  integer,
+  something,
   Eql(..),
   list,
   multiset,
@@ -18,9 +21,16 @@ import           Control.Egison.QQ
 --
 
 data Eql = Eql
+data Something = Something
 
 eql :: Matcher Eql
 eql = Matcher Eql
+
+integer :: Matcher Eql
+integer = eql
+
+something :: Matcher Something
+something = Matcher Something
 
 list :: Matcher a -> Matcher (List a)
 list (Matcher m) = Matcher (List m)
@@ -42,7 +52,8 @@ instance CollectionPatM (Matcher (Multiset m)) [a] where
   consPatM p1 p2 = Pattern (\t ctx (Multiset m) ->
                               case t of
                                 [] -> []
-                                x:xs -> map (\(x, xs) -> MCons (MAtom p1 x m) $ MCons (MAtom p2 xs $ Multiset m) MNil) $ matchAll t (list $ Matcher m) [ (joinPatL (PatVar "hs") (consPatL (PatVar "x") (PatVar "ts")), \(HCons hs (HCons x (HCons ts HNil))) -> (x, hs ++ ts)) ])
+                                x:xs -> map (\(x, xs) -> MCons (MAtom p1 x m) $ MCons (MAtom p2 xs $ Multiset m) MNil) $ matchAll t (list $ Matcher m) $ PCons [mc| joinPatL $hs (consPatL $x $ts) => (x, hs ++ ts) |] PNil)
+                                -- x:xs -> map (\(x, xs) -> MCons (MAtom p1 x m) $ MCons (MAtom p2 xs $ Multiset m) MNil) $ matchAll t (list $ Matcher m) [ (joinPatL (PatVar "hs") (consPatL (PatVar "x") (PatVar "ts")), \(HCons hs (HCons x (HCons ts HNil))) -> (x, hs ++ ts)) ])
 
 unjoin :: [a] -> [([a], [a])]
 unjoin []     = [([], [])]

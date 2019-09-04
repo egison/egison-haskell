@@ -1,33 +1,43 @@
-{-# LANGUAGE QuasiQuotes     #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE QuasiQuotes           #-}
+{-# LANGUAGE TypeOperators         #-}
 
 import           Control.Egison
 import           Unsafe.Coerce
 
 data Tree a = Leaf | Node (Tree a) a (Tree a)
 
-tree :: Matcher a -> Matcher (Tree a)
-tree m = Matcher (tree' m)
+data TreeM a = TreeM a
 
-tree' :: Matcher a -> Pattern (Tree a) -> Tree a -> [[MAtom]]
-tree' _ p@Wildcard t             = [[MAtom p something t]]
-tree' _ p@(PatVar _) t           = [[MAtom p something t]]
-tree' m (ValuePat' v) t          = [[] | v == t]
-tree' m (UserPat "Leaf" []) Leaf = [[]]
-tree' m (UserPat "Leaf" []) _    = []
-tree' m (UserPat "Node" [Pat p1, Pat p2, Pat p3]) (Node tree1 v tree2) =
-  let p1' = unsafeCoerce p1 in
-  let p2' = unsafeCoerce p2 in
-  let p3' = unsafeCoerce p3 in
-  [[MAtom p1' (tree m) tree1, MAtom p2' m v, MAtom p3' (tree m) tree2]]
-tree' _ _ _                      = []
+tree :: Matcher a -> Matcher (TreeM a)
+tree (Matcher m) = Matcher (TreeM m)
+
+class TreePat mt a where
+  leafPat :: Pattern a ctx mt '[]
+  nodePat :: a ~ (Tree b) => mt ~ Matcher (TreeM m) => Pattern a ctx mt xs -> Pattern b (ctx :++: xs) (Matcher m) ys -> Pattern a (ctx :++: xs :++: ys) mt zs -> Pattern a ctx mt (xs :++: (ys :++: zs))
+
+instance TreePat (Matcher (TreeM m)) (Tree a) where
+  leafPat =
+    Pattern (\t ctx _ ->
+      case t of
+        Leaf -> [MNil]
+        _    -> [])
+  nodePat p1 p2 p3 =
+    Pattern (\t ctx (TreeM m) ->
+      case t of
+        Node t1 v t2 -> [MCons (MAtom p1 t1 (TreeM m)) $ MCons (MAtom p2 v m) $ MCons (MAtom p3 t2 (TreeM m)) MNil]
+        _ -> [])
 
 main :: IO ()
 main = do
   let t1 = Node (Node Leaf 1 Leaf) 3 (Node Leaf 2 Leaf)
-  let t2 = Leaf :: Tree Integer
+  let t2 = Leaf
   putStrLn $ show $ f t1 -- [3]
   putStrLn $ show $ f t2 -- [0]
  where
    f t = matchAll t (tree integer)
-       [ [mc| (UserPat "Node" [Pat Wildcard, Pat $x, Pat Wildcard]) => x |],
-         [mc| (UserPat "Leaf" []) => 0 |] ]
+         $ PCons [mc| nodePat Wildcard $x Wildcard => x |]
+         $ PCons [mc| leafPat => 0 |] PNil

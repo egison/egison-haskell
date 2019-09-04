@@ -11,7 +11,10 @@ module Control.Egison.Core (
   Matcher(..),
   HList(..),
   MList(..),
+  PList(..),
+  ps,
   happend,
+  (:++:),
   Unit(..),
   Pattern(..),
   List(..),
@@ -30,7 +33,7 @@ import           Unsafe.Coerce
 data MState vs where
   MState :: vs ~ (xs :++: ys) => HList xs -> MList xs ys -> MState vs
 
-data MAtom ctx vs = forall a m. MAtom (Pattern a (Matcher m) ctx vs) a m
+data MAtom ctx vs = forall a m. MAtom (Pattern a ctx (Matcher m) vs) a m
 data Matcher a = Matcher a
 
 data HList xs where
@@ -42,14 +45,21 @@ data MList ctx vs where
   MCons :: MAtom ctx xs -> MList (ctx :++: xs) ys -> MList ctx (xs :++: ys)
   MJoin :: MList ctx xs -> MList (ctx :++: xs) ys -> MList ctx (xs :++: ys)
 
+data PList a m b where
+  PNil :: PList a m b
+  PCons :: (Pattern a '[] (Matcher m) vs, (HList vs) -> b) -> PList a m b -> PList a m b
+
+ps :: (Pattern a '[] (Matcher m) vs, (HList vs) -> b) -> PList a m b
+ps x = PCons x PNil
+
 happend :: HList as -> HList bs -> HList (as :++: bs)
 happend (HCons x xs) ys = unsafeCoerce $ HCons x $ happend xs ys
 happend HNil ys         = ys
 
 type family as :++: bs :: [*] where
   bs :++: '[] = bs
-  (a ': as') :++: bs = a ': (as' :++: bs)
   '[] :++: bs = bs
+  (a ': as') :++: bs = a ': (as' :++: bs)
 
 --
 -- Patterns
@@ -57,25 +67,25 @@ type family as :++: bs :: [*] where
 
 data Unit = Unit
 
-data Pattern a mt ctx vs where
-  Pattern :: mt ~ Matcher m => (a -> HList ctx -> m -> [MList ctx vs]) -> Pattern a mt ctx vs
+data Pattern a ctx mt vs where
+  Pattern :: mt ~ Matcher m => (a -> HList ctx -> m -> [MList ctx vs]) -> Pattern a ctx mt vs
 
-  Wildcard :: Pattern a mt ctx '[]
-  PatVar :: String -> Pattern a mt ctx '[a]
-  ValuePat :: Eq a => (HList ctx -> a) -> Pattern a mt ctx '[]
-  AndPat :: Pattern a mt ctx vs -> Pattern a mt (ctx :++: vs) vs' -> Pattern a mt ctx (vs :++: vs')
-  OrPat :: Pattern a mt ctx vs -> Pattern a mt ctx vs -> Pattern a mt ctx vs
-  NotPat :: Pattern a mt ctx '[] -> Pattern a mt ctx '[]
-  PredicatePat :: (a -> HList ctx -> Bool) -> Pattern a mt ctx '[]
+  Wildcard :: Pattern a ctx mt '[]
+  PatVar :: String -> Pattern a ctx mt '[a]
+  ValuePat :: Eq a => (HList ctx -> a) -> Pattern a ctx mt '[]
+  AndPat :: Pattern a ctx mt vs -> Pattern a (ctx :++: vs) mt vs' -> Pattern a ctx mt (vs :++: vs')
+  OrPat :: Pattern a ctx mt vs -> Pattern a ctx mt vs -> Pattern a ctx mt vs
+  NotPat :: Pattern a ctx mt '[] -> Pattern a ctx mt '[]
+  PredicatePat :: (HList ctx -> a -> Bool) -> Pattern a ctx mt '[]
 
 data List a = List a
 data Multiset a = Multiset a
 
 class CollectionPatL mt a where
-  nilPatL       :: a ~ [b] => Pattern a mt ctx '[]
-  consPatL      :: a ~ [b] => mt ~ Matcher (List m) => Pattern b (Matcher m) ctx xs -> Pattern a mt (ctx :++: xs) ys -> Pattern a mt ctx (xs :++: ys)
-  joinPatL      :: a ~ [b] => Pattern a mt ctx xs -> Pattern a mt (ctx :++: xs) ys -> Pattern a mt ctx (xs :++: ys)
+  nilPatL       :: a ~ [b] => Pattern a ctx mt '[]
+  consPatL      :: a ~ [b] => mt ~ Matcher (List m) => Pattern b ctx (Matcher m) xs -> Pattern a (ctx :++: xs) mt ys -> Pattern a ctx mt (xs :++: ys)
+  joinPatL      :: a ~ [b] => Pattern a ctx mt xs -> Pattern a (ctx :++: xs) mt ys -> Pattern a ctx mt (xs :++: ys)
 
 class CollectionPatM mt a where
-  nilPatM       :: a ~ [b] => Pattern a mt ctx '[]
-  consPatM      :: a ~ [b] => mt ~ Matcher (Multiset m) => Pattern b (Matcher m) ctx xs -> Pattern a mt (ctx :++: xs) ys -> Pattern a mt ctx (xs :++: ys)
+  nilPatM       :: a ~ [b] => Pattern a ctx mt '[]
+  consPatM      :: a ~ [b] => mt ~ Matcher (Multiset m) => Pattern b ctx (Matcher m) xs -> Pattern a (ctx :++: xs) mt ys -> Pattern a ctx mt (xs :++: ys)
