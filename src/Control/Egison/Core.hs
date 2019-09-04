@@ -28,20 +28,20 @@ import           Data.Maybe
 --
 
 data MState vs where
-  MState :: vs ~ (xs :++: ys) => HList xs -> MList ys -> MState vs
+  MState :: vs ~ (xs :++: ys) => HList xs -> MList xs ys -> MState vs
 
-data MAtom vs = forall a m ctx. MAtom (Pattern a m ctx vs) a
+data MAtom ctx vs = forall a m. MAtom (Pattern a m ctx vs) a
 data Matcher a = Matcher a
 
 data HList xs where
   HNil :: HList '[]
   HCons :: a -> HList as -> HList (a ': as)
 
-data MList vs where
-  MNil :: MList '[]
-  MSingle :: MAtom xs -> MList xs
-  MCons :: MAtom xs -> MList ys -> MList (xs :++: ys)
-  MJoin :: MList xs -> MList ys -> MList (xs :++: ys)
+data MList ctx vs where
+  MNil :: MList ctx '[]
+  MSingle :: MAtom ctx xs -> MList ctx xs
+  MCons :: MAtom ctx xs -> MList (ctx :++: xs) ys -> MList ctx (xs :++: ys)
+  MJoin :: MList ctx xs -> MList (ctx :++: xs) ys -> MList ctx (xs :++: ys)
 
 happend :: HList as -> HList bs -> HList (as :++: bs)
 happend (HCons x xs) ys = HCons x $ happend xs ys
@@ -58,18 +58,19 @@ type family as :++: bs :: [*] where
 data Unit = Unit
 
 data Pattern a m ctx vs where
-  Pattern :: vs ~ (x ': xs) => (a -> HList ctx -> ([MList xs], x)) -> Pattern a m ctx vs
+  Pattern :: (a -> HList ctx -> ([MList ctx vs], Unit)) -> Pattern a m ctx vs
+  Pattern' :: vs ~ (x ': xs) => (a -> HList ctx -> ([MList (ctx :++: '[x]) xs], x)) -> Pattern a m ctx vs
 
 class BasePat m a where
-  wildcard :: Pattern a m ctx '[Unit]
+  wildcard :: Pattern a m ctx '[]
   patVar :: String -> Pattern a m ctx '[a]
-  valuePat :: Eq a => (HList ctx -> a) -> Pattern a m ctx '[Unit]
+  valuePat :: Eq a => (HList ctx -> a) -> Pattern a m ctx '[]
 
 data List a = List a
 
 class CollectionPat m a where
-  nilPat       :: a ~ [b] => Pattern a m ctx '[Unit]
-  consPat      :: a ~ [b] => m ~ (Matcher (List m')) => Pattern b (Matcher m') ctx xs -> Pattern a m (ctx :++: xs) ys -> Pattern a m ctx (Unit ': (xs :++: ys))
+  nilPat       :: a ~ [b] => Pattern a m ctx '[]
+  consPat      :: a ~ [b] => m ~ (Matcher (List m')) => Pattern b (Matcher m') ctx xs -> Pattern a m (ctx :++: xs) ys -> Pattern a m ctx (xs :++: ys)
   -- joinPat      :: a ~ [b] => Pattern a m xs -> Pattern a m ys -> Pattern a m (xs :++: ys)
 
 -- data Pattern a where

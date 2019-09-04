@@ -28,12 +28,12 @@ list (Matcher m) = Matcher (List m)
 
 instance Eq a => BasePat (Matcher Eql) a where
   wildcard = Pattern (\t ctx -> ([MNil], Unit))
-  patVar _ = Pattern (\t ctx -> ([MNil], t))
+  patVar _ = Pattern' (\t ctx -> ([MNil], t))
   valuePat f = Pattern (\t ctx -> ([MNil | f ctx == t], Unit))
 
 instance BasePat (Matcher (List m)) [a] where
   wildcard = Pattern (\t ctx -> ([MNil], Unit))
-  patVar _ = Pattern (\t ctx -> ([MNil], t))
+  patVar _ = Pattern' (\t ctx -> ([MNil], t))
   valuePat f = Pattern (\t ctx -> ([MNil | f ctx == t], Unit))
 
 instance CollectionPat (Matcher (List m)) [a] where
