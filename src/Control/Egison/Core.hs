@@ -19,8 +19,7 @@ module Control.Egison.Core (
   Pattern(..),
   List(..),
   Multiset(..),
-  CollectionPatL(..),
-  CollectionPatM(..),
+  CollectionPat(..),
   ) where
 
 import           Data.Maybe
@@ -81,11 +80,7 @@ data Pattern a ctx mt vs where
 data List a = List a
 data Multiset a = Multiset a
 
-class CollectionPatL mt a where
-  nilPatL       :: a ~ [b] => Pattern a ctx mt '[]
-  consPatL      :: a ~ [b] => mt ~ Matcher (List m) => Pattern b ctx (Matcher m) xs -> Pattern a (ctx :++: xs) mt ys -> Pattern a ctx mt (xs :++: ys)
-  joinPatL      :: a ~ [b] => Pattern a ctx mt xs -> Pattern a (ctx :++: xs) mt ys -> Pattern a ctx mt (xs :++: ys)
-
-class CollectionPatM mt a where
-  nilPatM       :: a ~ [b] => Pattern a ctx mt '[]
-  consPatM      :: a ~ [b] => mt ~ Matcher (Multiset m) => Pattern b ctx (Matcher m) xs -> Pattern a (ctx :++: xs) mt ys -> Pattern a ctx mt (xs :++: ys)
+class CollectionPat mt a where
+  nilPat       :: a ~ [b] => Pattern a ctx mt '[]
+  consPat      :: a ~ [b] => mt ~ Matcher (f m) => Pattern b ctx (Matcher m) xs -> Pattern a (ctx :++: xs) mt ys -> Pattern a ctx mt (xs :++: ys)
+  joinPat      :: a ~ [b] => Pattern a ctx mt xs -> Pattern a (ctx :++: xs) mt ys -> Pattern a ctx mt (xs :++: ys)
