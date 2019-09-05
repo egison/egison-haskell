@@ -20,7 +20,6 @@ module Control.Egison.Matcher (
 import           Control.Egison.Core
 import           Control.Egison.Match
 import           Control.Egison.QQ
-import Data.List
 
 --
 -- Matchers
@@ -60,15 +59,13 @@ instance CollectionPat (Matcher (Multiset m)) [a] where
   nilPat = Pattern (\tgt ctx _ -> [MNil | null tgt])
   consPat p Wildcard = Pattern (\tgt ctx (Multiset m) -> map (\x -> MCons (MAtom p x m) MNil) tgt)
   consPat p1 p2 = Pattern (\tgt ctx (Multiset m) -> map (\(x, xs) -> MCons (MAtom p1 x m) $ MCons (MAtom p2 xs $ Multiset m) MNil) $ matchAll tgt (list $ Matcher m) $ [mc| joinPat $hs (consPat $x $ts) => (x, hs ++ ts) |] .*. PNil)
-  -- joinPat p1 p2 = Pattern (\tgt ctx (Multiset m) -> map (\(xs, ys) -> MCons (MAtom p1 xs $ Multiset m) $ MCons (MAtom p2 ys $ Multiset m) MNil) $ concatMap (\n -> subsets n tgt) [0..(length tgt)])
+  joinPat p1 p2 = Pattern (\tgt ctx (Multiset m) -> map (\(xs, ys) -> MCons (MAtom p1 xs $ Multiset m) $ MCons (MAtom p2 ys $ Multiset m) MNil) $ concatMap (\n -> unjoinM n tgt) [0..(length tgt)])
 
 unjoin :: [a] -> [([a], [a])]
 unjoin []     = [([], [])]
 unjoin (x:xs) = ([], x:xs) : map (\(hs,ts) -> (x:hs, ts)) (unjoin xs)
 
-subsets :: Int -> [a] -> [([a], [a])]
-subsets 0 xs = [([], xs)]
-subsets k xs
-  | length xs < k = []
-  | otherwise     = map (\(as, bs) -> (h:as, bs)) (subsets (k - 1) t) ++ map (\(as, bs) -> (as, h:bs)) (subsets k t)
-  where (h:t) = xs
+unjoinM :: Int -> [a] -> [([a], [a])]
+unjoinM 0 xs = [([], xs)]
+unjoinM n [] = []
+unjoinM n (x:xs) = map (\(as, bs) -> (x:as, bs)) (unjoinM (n-1) xs) ++ map (\(as, bs) -> (as, x:bs)) (unjoinM n xs)
