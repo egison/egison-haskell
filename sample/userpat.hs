@@ -39,5 +39,5 @@ main = do
   putStrLn $ show $ f t2 -- [0]
  where
    f t = matchAll t (tree integer)
-         $ PCons [mc| nodePat Wildcard $x Wildcard => x |]
-         $ PCons [mc| leafPat => 0 |] PNil
+         $ [mc| nodePat Wildcard $x Wildcard => x |] .*.
+           [mc| leafPat => 0 |] .*. PNil

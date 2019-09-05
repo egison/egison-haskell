@@ -12,7 +12,7 @@ module Control.Egison.Core (
   HList(..),
   MList(..),
   PList(..),
-  ps,
+  (.*.),
   happend,
   (:++:),
   Pattern(..),
@@ -45,8 +45,10 @@ data PList a m b where
   PNil :: PList a m b
   PCons :: (Pattern a '[] (Matcher m) vs, HList vs -> b) -> PList a m b -> PList a m b
 
-ps :: (Pattern a '[] (Matcher m) vs, HList vs -> b) -> PList a m b
-ps x = PCons x PNil
+(.*.) :: (Pattern a '[] (Matcher m) vs, HList vs -> b) -> PList a m b -> PList a m b
+x .*. xs = PCons x xs
+
+infixr 0 .*.
 
 happend :: HList as -> HList bs -> HList (as :++: bs)
 happend (HCons x xs) ys = unsafeCoerce $ HCons x $ happend xs ys
