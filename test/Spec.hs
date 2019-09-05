@@ -46,6 +46,11 @@ spec = do
         (ps [mc| consPat (AndPat (NotPat #5) $x) (consPat (AndPat (OrPat #5 #2) $y) $xs) => (x, y, xs) |] )
       `shouldBe` [(1,2,[5,9,4]),(1,5,[2,9,4]),(2,5,[1,9,4]),(9,2,[1,5,4]),(9,5,[1,2,4]),(4,2,[1,5,9]),(4,5,[1,2,9])]
 
+    it "joinpat in multiset matcher" $ length (
+      matchAll [1..5] (multiset integer)
+        (ps [mc| joinPat $xs $ys => (xs, ys) |] ))
+      `shouldBe` 32
+
     -- it "Later pattern" $
     --   match [1..5] (list integer)
     --     [ [mc| ConsPat (LaterPat #(x - 1)) (ConsPat $x $xs) => (x, xs) |] ]

@@ -1,7 +1,7 @@
 {-# LANGUAGE QuasiQuotes     #-}
 {-# LANGUAGE GADTs     #-}
-import           Control.Egison
 
+import           Control.Egison
 
 main :: IO ()
 main = do

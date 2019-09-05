@@ -17,7 +17,7 @@ tree (Matcher m) = Matcher (TreeM m)
 
 class TreePat mt a where
   leafPat :: Pattern a ctx mt '[]
-  nodePat :: a ~ (Tree b) => mt ~ Matcher (TreeM m) => Pattern a ctx mt xs -> Pattern b (ctx :++: xs) (Matcher m) ys -> Pattern a (ctx :++: xs :++: ys) mt zs -> Pattern a ctx mt (xs :++: (ys :++: zs))
+  nodePat :: a ~ (Tree b) => mt ~ Matcher (f m) => Pattern a ctx mt xs -> Pattern b (ctx :++: xs) (Matcher m) ys -> Pattern a (ctx :++: xs :++: ys) mt zs -> Pattern a ctx mt (xs :++: (ys :++: zs))
 
 instance TreePat (Matcher (TreeM m)) (Tree a) where
   leafPat =

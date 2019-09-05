@@ -86,7 +86,7 @@ changeExp vars expr = do
   vars'' <- mapM (\s -> newName $ s ++ "'") vars
   return $ LamE [f vars'] expr
 
--- HCons x (HCons y HNil)
+-- \[x, y] -> HCons x (HCons y HNil)
 f :: [Name] -> Pat
 f []     = ConP 'HNil []
 f (x:xs) = InfixP (VarP x) 'HCons $ f xs

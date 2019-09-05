@@ -4,10 +4,15 @@
 {-# LANGUAGE QuasiQuotes           #-}
 
 module Control.Egison.Matcher (
+  -- data type of matcher
+  Eql(..),
+  Something(..),
+  List(..),
+  Multiset(..),
+  -- matcher
   eql,
   integer,
   something,
-  Eql(..),
   list,
   multiset,
   ) where
@@ -21,7 +26,11 @@ import           Control.Egison.QQ
 --
 
 data Eql = Eql
+
 data Something = Something
+
+newtype List a = List a
+newtype Multiset a = Multiset a
 
 eql :: Matcher Eql
 eql = Matcher Eql
@@ -40,20 +49,25 @@ multiset (Matcher m) = Matcher (Multiset m)
 
 instance CollectionPat (Matcher (List m)) [a] where
   nilPat = Pattern (\t ctx _ -> [MNil | null t])
-  consPat p1 p2 = Pattern (\t ctx (List m) ->
-                              case t of
+  consPat p1 p2 = Pattern (\tgt ctx (List m) ->
+                              case tgt of
                                 [] -> []
                                 x:xs -> [MCons (MAtom p1 x m) $ MCons (MAtom p2 xs $ List m) MNil])
-  joinPat p1 p2 = Pattern (\t ctx m -> map (\(hs, ts) -> MCons (MAtom p1 hs m) $ MCons (MAtom p2 ts m) MNil) (unjoin t))
+  joinPat p1 p2 = Pattern (\tgt ctx m -> map (\(hs, ts) -> MCons (MAtom p1 hs m) $ MCons (MAtom p2 ts m) MNil) (unjoin tgt))
 
 instance CollectionPat (Matcher (Multiset m)) [a] where
-  nilPat = Pattern (\t ctx _ -> [MNil | null t])
-  consPat p Wildcard = Pattern (\t ctx (Multiset m) -> map (\x -> MCons (MAtom p x m) MNil) t)
-  consPat p1 p2 = Pattern (\t ctx (Multiset m) ->
-                              case t of
+  nilPat = Pattern (\tgt ctx _ -> [MNil | null tgt])
+  consPat p Wildcard = Pattern (\tgt ctx (Multiset m) -> map (\x -> MCons (MAtom p x m) MNil) tgt)
+  consPat p1 p2 = Pattern (\tgt ctx (Multiset m) ->
+                              case tgt of
                                 [] -> []
-                                x:xs -> map (\(x, xs) -> MCons (MAtom p1 x m) $ MCons (MAtom p2 xs $ Multiset m) MNil) $ matchAll t (list $ Matcher m) $ PCons [mc| joinPat $hs (consPat $x $ts) => (x, hs ++ ts) |] PNil)
-                                -- x:xs -> map (\(x, xs) -> MCons (MAtom p1 x m) $ MCons (MAtom p2 xs $ Multiset m) MNil) $ matchAll t (list $ Matcher m) [ (joinPatL (PatVar "hs") (consPatL (PatVar "x") (PatVar "ts")), \(HCons hs (HCons x (HCons ts HNil))) -> (x, hs ++ ts)) ])
+                                _ -> map (\(x, xs) -> MCons (MAtom p1 x m) $ MCons (MAtom p2 xs $ Multiset m) MNil) $ matchAll tgt (list $ Matcher m) $ PCons [mc| joinPat $hs (consPat $x $ts) => (x, hs ++ ts) |] PNil)
+  joinPat p1 p2 = Pattern (\tgt ctx m ->
+                              case tgt of
+                                [] -> [MCons (MAtom p1 [] m) $ MCons (MAtom p2 [] m) MNil]
+                                (a:as) ->
+                                  let ls = concatMap (\(bs, cs) -> [(bs, a:cs), (a:bs, cs)]) $ matchAll as (Matcher m) $ PCons [mc| joinPat $bs $cs => (bs, cs) |] PNil in
+                                  map (\(xs, ys) -> MCons (MAtom p1 xs m) $ MCons (MAtom p2 ys m) MNil) ls)
 
 unjoin :: [a] -> [([a], [a])]
 unjoin []     = [([], [])]

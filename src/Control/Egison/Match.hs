@@ -1,9 +1,9 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs     #-}
+
 module Control.Egison.Match (
   matchAll,
   match,
-  processMStatesAll,
   ) where
 
 import           Control.Egison.Core
@@ -17,7 +17,7 @@ matchAll :: a -> Matcher m -> PList a m b -> [b]
 matchAll tgt (Matcher m) PNil = []
 matchAll tgt (Matcher m) (PCons (pat, f) ps) =
   let results = processMStatesAll [[MState HNil (MCons (MAtom pat tgt m) MNil)]] in
-  map f results ++ (matchAll tgt (Matcher m) ps)
+  map f results ++ matchAll tgt (Matcher m) ps
 
 match :: a -> Matcher m -> PList a m b -> b
 match tgt m xs = head $ matchAll tgt m xs
@@ -51,7 +51,7 @@ processMState (MState rs (MCons (MAtom pat tgt m) atoms)) =
 
     Wildcard -> [MState rs atoms]
     PatVar _ -> [unsafeCoerce $ MState (happend rs (HCons tgt HNil)) atoms]
-    ValuePat f -> if f rs == tgt then [MState rs atoms] else []
+    ValuePat f -> [MState rs atoms | f rs == tgt]
     AndPat p1 p2 ->
       [unsafeCoerce $ MState rs (MCons (MAtom p1 tgt m) (MCons (MAtom p2 tgt m) $ unsafeCoerce atoms))]
     OrPat p1 p2 ->
