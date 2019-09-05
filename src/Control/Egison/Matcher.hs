@@ -59,7 +59,7 @@ instance CollectionPat (Matcher (Multiset m)) [a] where
   nilPat = Pattern (\tgt ctx _ -> [MNil | null tgt])
   consPat p Wildcard = Pattern (\tgt ctx (Multiset m) -> map (\x -> MCons (MAtom p x m) MNil) tgt)
   consPat p1 p2 = Pattern (\tgt ctx (Multiset m) -> map (\(x, xs) -> MCons (MAtom p1 x m) $ MCons (MAtom p2 xs $ Multiset m) MNil) $ matchAll tgt (list $ Matcher m) $ [mc| joinPat $hs (consPat $x $ts) => (x, hs ++ ts) |] .*. PNil)
-  joinPat p1 p2 = Pattern (\tgt ctx (Multiset m) -> map (\(xs, ys) -> MCons (MAtom p1 xs $ Multiset m) $ MCons (MAtom p2 ys $ Multiset m) MNil) $ concatMap (\n -> unjoinM n tgt) [0..(length tgt)])
+  joinPat p1 p2 = Pattern (\tgt ctx m -> map (\(xs, ys) -> MCons (MAtom p1 xs m) $ MCons (MAtom p2 ys m) MNil) $ concatMap (\n -> unjoinM n tgt) [0..(length tgt)])
 
 unjoin :: [a] -> [([a], [a])]
 unjoin []     = [([], [])]
