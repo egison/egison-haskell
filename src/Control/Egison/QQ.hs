@@ -35,7 +35,7 @@ changePatVar :: String -> String
 changePatVar pat = subRegex (mkRegex "\\$([a-zA-Z0-9]+)") pat "(PatVar \"\\1\")"
 
 changeValuePat :: String -> String
-changeValuePat pat = subRegex (mkRegex "\\#(\\([^)]+\\)|\\[[^)]+\\]|[a-zA-Z0-9]+)") pat "(ValuePat \\1)"
+changeValuePat pat = subRegex (mkRegex "\\#(\\([^)]+\\)|\\[[^)]+\\]|[a-zA-Z0-9]+)") pat "(valuePat \\1)"
 
 mcChange :: Exp -> Exp -> Q Exp
 mcChange pat expr = do
@@ -48,11 +48,13 @@ extractPatVars [] vars = (vars, [])
 extractPatVars (ParensE x:xs) vars = extractPatVars (x:xs) vars
 extractPatVars (AppE (ConE name) p:xs) vars
   | nameBase name == "PatVar" = case p of (LitE (StringL s)) -> extractPatVars xs (vars ++ [s])
-  | nameBase name == "ValuePat" = let (vs, ns) = extractPatVars xs vars in (vs, length vars:ns)
   | nameBase name == "PredicatePat" = let (vs, ns) = extractPatVars xs vars in (vs, length vars:ns)
   | nameBase name == "LaterPat" =
       let (vs1, ns1) = extractPatVars xs vars in
       let (vs2, ns2) = extractPatVars [p] vs1 in (vs2, ns2 ++ ns1)
+  | otherwise = extractPatVars (p:xs) vars
+extractPatVars (AppE (VarE name) p:xs) vars
+  | nameBase name == "valuePat" = let (vs, ns) = extractPatVars xs vars in (vs, length vars:ns)
   | otherwise = extractPatVars (p:xs) vars
 extractPatVars (AppE a b:xs) vars = extractPatVars (a:b:xs) vars
 extractPatVars (SigE x typ:xs) vs = extractPatVars (x:xs) vs
@@ -62,15 +64,19 @@ extractPatVars (_:xs) vars = extractPatVars xs vars
 -- change PredicatePat (\x -> e) to \(HCons x HNil) -> (\x -> e)
 changePat :: Exp -> [[String]] -> Q (Exp, [[String]])
 changePat e@(AppE (ConE name) p) vs
-  | nameBase name == "ValuePat" = do
-      let (vars:varss) = vs
-      (, varss) <$> appE (conE 'ValuePat) (changeExp vars p)
   | nameBase name == "PredicatePat" = do
       let (vars:varss) = vs
       (, varss) <$> appE (conE 'PredicatePat) (changeExp vars p)
   | otherwise = do
       (e', vs') <- changePat p vs
       (, vs') <$> appE (conE name) (return e')
+changePat e@(AppE (VarE name) p) vs
+  | nameBase name == "valuePat" = do
+      let (vars:varss) = vs
+      (, varss) <$> appE (varE name) (changeExp vars p)
+  | otherwise = do
+      (e', vs') <- changePat p vs
+      (, vs') <$> appE (varE name) (return e')
 changePat (AppE e1 e2) vs = do
   (e1', vs') <- changePat e1 vs
   (e2', vs'') <- changePat e2 vs'

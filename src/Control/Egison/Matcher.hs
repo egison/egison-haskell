@@ -47,6 +47,15 @@ list (Matcher m) = Matcher (List m)
 multiset :: Matcher a -> Matcher (Multiset a)
 multiset (Matcher m) = Matcher (Multiset m)
 
+instance Eq a => BasePat (Matcher Eql) a where
+  valuePat f = Pattern (\tgt ctx _ -> [MNil | f ctx == tgt])
+
+instance Eq a => BasePat (Matcher (List m)) [a] where
+  valuePat f = Pattern (\tgt ctx _ -> [MNil | f ctx == tgt])
+
+instance Eq a => BasePat (Matcher (Multiset m)) [a] where
+  valuePat f = Pattern (\tgt ctx _ -> [MNil | f ctx == tgt])
+
 instance CollectionPat (Matcher (List m)) [a] where
   nilPat = Pattern (\t ctx _ -> [MNil | null t])
   consPat p1 p2 = Pattern (\tgt ctx (List m) ->

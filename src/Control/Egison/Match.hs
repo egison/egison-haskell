@@ -50,7 +50,6 @@ processMState (MState rs (MCons (MAtom pat tgt m) atoms)) =
       map (\newAtoms -> MState rs (MJoin newAtoms atoms)) matomss
     Wildcard -> [MState rs atoms]
     PatVar _ -> [unsafeCoerce $ MState (happend rs (HCons tgt HNil)) atoms]
-    ValuePat f -> [MState rs atoms | f rs == tgt]
     AndPat p1 p2 ->
       [unsafeCoerce $ MState rs (MCons (MAtom p1 tgt m) (MCons (MAtom p2 tgt m) $ unsafeCoerce atoms))]
     OrPat p1 p2 ->

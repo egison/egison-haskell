@@ -16,6 +16,7 @@ module Control.Egison.Core (
   happend,
   (:++:),
   Pattern(..),
+  BasePat(..),
   CollectionPat(..),
   ) where
 
@@ -68,11 +69,13 @@ data Pattern a ctx mt vs where
 
   Wildcard :: Pattern a ctx mt '[]
   PatVar :: String -> Pattern a ctx mt '[a]
-  ValuePat :: Eq a => (HList ctx -> a) -> Pattern a ctx mt '[]
   AndPat :: Pattern a ctx mt vs -> Pattern a (ctx :++: vs) mt vs' -> Pattern a ctx mt (vs :++: vs')
   OrPat :: Pattern a ctx mt vs -> Pattern a ctx mt vs -> Pattern a ctx mt vs
   NotPat :: Pattern a ctx mt '[] -> Pattern a ctx mt '[]
   PredicatePat :: (HList ctx -> a -> Bool) -> Pattern a ctx mt '[]
+
+class BasePat mt a where
+  valuePat :: Eq a => (HList ctx -> a) -> Pattern a ctx mt '[]
 
 class CollectionPat mt a where
   nilPat       :: a ~ [b] => Pattern a ctx mt '[]
