@@ -17,6 +17,8 @@ module Control.Egison.Core (
   (:++:),
   Pattern(..),
   BasePat(..),
+  Pair(..),
+  PairPat(..),
   CollectionPat(..),
   ) where
 
@@ -76,6 +78,11 @@ data Pattern a ctx mt vs where
 
 class BasePat mt a where
   valuePat :: Eq a => (HList ctx -> a) -> Pattern a ctx mt '[]
+
+data Pair a b = Pair a b
+
+class PairPat mt a where
+  pairPat :: a ~ (b1, b2) => mt ~ Matcher (Pair m1 m2) => Pattern b1 ctx (Matcher m1) xs -> Pattern b2 (ctx :++: xs) (Matcher m2) ys -> Pattern a ctx mt (xs :++: ys)
 
 class CollectionPat mt a where
   nilPat       :: a ~ [b] => Pattern a ctx mt '[]

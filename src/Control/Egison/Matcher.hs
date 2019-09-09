@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -41,6 +42,9 @@ integer = eql
 something :: Matcher Something
 something = Matcher Something
 
+pair :: Matcher a -> Matcher b -> Matcher (Pair a b)
+pair (Matcher m1) (Matcher m2) = Matcher (Pair m1 m2)
+
 list :: Matcher a -> Matcher (List a)
 list (Matcher m) = Matcher (List m)
 
@@ -53,8 +57,15 @@ instance Eq a => BasePat (Matcher Eql) a where
 instance Eq a => BasePat (Matcher (List m)) [a] where
   valuePat f = Pattern (\tgt ctx _ -> [MNil | f ctx == tgt])
 
-instance Eq a => BasePat (Matcher (Multiset m)) [a] where
-  valuePat f = Pattern (\tgt ctx _ -> [MNil | f ctx == tgt])
+instance (Eq a,  BasePat (Matcher m) a) => BasePat (Matcher (Multiset m)) [a] where
+  valuePat f = Pattern (\tgt ctx (Multiset m) ->
+                            match (f ctx, tgt) (pair (list $ Matcher m) (multiset $ Matcher m)) $
+                              [mc| pairPat nilPat nilPat => [MNil] |] .*.
+                              [mc| pairPat (consPat $x $xs) (consPat #x #xs) => [MNil] |] .*.
+                              [mc| pairPat Wildcard Wildcard => [] |] .*. PNil)
+
+instance PairPat (Matcher (Pair m1 m2)) (a1, a2) where
+  pairPat p1 p2 = Pattern (\(t1, t2) _ (Pair m1 m2) -> [MCons (MAtom p1 t1 m1) $ MCons (MAtom p2 t2 m2) MNil])
 
 instance CollectionPat (Matcher (List m)) [a] where
   nilPat = Pattern (\t ctx _ -> [MNil | null t])
@@ -68,7 +79,7 @@ instance CollectionPat (Matcher (Multiset m)) [a] where
   nilPat = Pattern (\tgt ctx _ -> [MNil | null tgt])
   consPat p Wildcard = Pattern (\tgt ctx (Multiset m) -> map (\x -> MCons (MAtom p x m) MNil) tgt)
   consPat p1 p2 = Pattern (\tgt ctx (Multiset m) -> map (\(x, xs) -> MCons (MAtom p1 x m) $ MCons (MAtom p2 xs $ Multiset m) MNil) $ matchAll tgt (list $ Matcher m) $ [mc| joinPat $hs (consPat $x $ts) => (x, hs ++ ts) |] .*. PNil)
-  joinPat p1 p2 = Pattern (\tgt ctx m -> map (\(xs, ys) -> MCons (MAtom p1 xs m) $ MCons (MAtom p2 ys m) MNil) $ concatMap (\n -> unjoinM n tgt) [0..(length tgt)])
+  joinPat p1 p2 = Pattern (\tgt ctx m -> map (\(xs, ys) -> MCons (MAtom p1 xs m) $ MCons (MAtom p2 ys m) MNil) $ concatMap (`unjoinM` tgt) [0..(length tgt)])
 
 unjoin :: [a] -> [([a], [a])]
 unjoin []     = [([], [])]
