@@ -16,7 +16,7 @@ module Control.Egison.Core (
   happend,
   (:++:),
   Pattern(..),
-  BasePat(..),
+  ValuePat(..),
   Pair(..),
   PairPat(..),
   CollectionPat(..),
@@ -76,7 +76,7 @@ data Pattern a ctx mt vs where
   NotPat :: Pattern a ctx mt '[] -> Pattern a ctx mt '[]
   PredicatePat :: (HList ctx -> a -> Bool) -> Pattern a ctx mt '[]
 
-class BasePat mt a where
+class ValuePat mt a where
   valuePat :: Eq a => (HList ctx -> a) -> Pattern a ctx mt '[]
 
 data Pair a b = Pair a b
