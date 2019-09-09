@@ -85,6 +85,6 @@ class PairPat mt a where
   pairPat :: a ~ (b1, b2) => mt ~ Matcher (Pair m1 m2) => Pattern b1 ctx (Matcher m1) xs -> Pattern b2 (ctx :++: xs) (Matcher m2) ys -> Pattern a ctx mt (xs :++: ys)
 
 class CollectionPat mt a where
-  nilPat       :: a ~ [b] => Pattern a ctx mt '[]
-  consPat      :: a ~ [b] => mt ~ Matcher (f m) => Pattern b ctx (Matcher m) xs -> Pattern a (ctx :++: xs) mt ys -> Pattern a ctx mt (xs :++: ys)
-  joinPat      :: a ~ [b] => Pattern a ctx mt xs -> Pattern a (ctx :++: xs) mt ys -> Pattern a ctx mt (xs :++: ys)
+  nil       :: a ~ [b] => Pattern a ctx mt '[]
+  cons      :: a ~ [b] => mt ~ Matcher (f m) => Pattern b ctx (Matcher m) xs -> Pattern a (ctx :++: xs) mt ys -> Pattern a ctx mt (xs :++: ys)
+  join      :: a ~ [b] => Pattern a ctx mt xs -> Pattern a (ctx :++: xs) mt ys -> Pattern a ctx mt (xs :++: ys)
