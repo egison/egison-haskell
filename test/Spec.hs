@@ -28,11 +28,11 @@ pmConcat xss = matchAll xss (multiset (multiset something))
 spec :: Spec
 spec = do
   describe "match and matchAll" $ do
-    it "ist cons pattern" $
+    it "list cons pattern" $
       match [1,2,5,9,4] (list integer) ([mc| consPat $x $xs => (x, xs) |] .*. PNil)
       `shouldBe` (1, [2,5,9,4])
 
-    it "ultiset cons pattern" $
+    it "multiset cons pattern" $
       matchAll [1,2,5,9,4] (multiset integer) ([mc| consPat $x $xs => (x, xs) |] .*. PNil)
       `shouldBe` [(1,[2,5,9,4]),(2,[1,5,9,4]),(5,[1,2,9,4]),(9,[1,2,5,4]),(4,[1,2,5,9])]
 
@@ -55,6 +55,11 @@ spec = do
     --   match [1..5] (list integer)
     --     [ [mc| ConsPat (LaterPat #(x - 1)) (ConsPat $x $xs) => (x, xs) |] ]
     --   `shouldBe` (2,[3,4,5])
+
+    it "value pattern in multiset matcher" $
+      matchAll [1,2,3] (multiset integer)
+        ([mc| #[2,1,3] => "Matched" |] .*. PNil)
+      `shouldBe` ["Matched"]
 
     it "Check the order of pattern-matching results" $
       take 10 (matchAll [1..] (multiset integer)
