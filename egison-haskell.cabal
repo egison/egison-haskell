@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f7fd977e25301d89318aef37d1794503b74619e0b1de9f26c60da7b08bd0ac68
+-- hash: fc4fd13b39643059f0c2fb0a175a83ce58c9379e9f0c03354f36aa894600d515
 
 name:           egison-haskell
 version:        0.1.0.0
@@ -37,7 +37,8 @@ library
   hs-source-dirs:
       src
   build-depends:
-      Useful
+      Unique
+    , Useful
     , base >=4.7 && <5
     , containers
     , haskell-src-meta

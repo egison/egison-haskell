@@ -31,6 +31,7 @@ library:
   - haskell-src-meta
   - strings
   - regex-compat
+  - Unique
 
 tests:
   egison-haskell-test:
