@@ -9,20 +9,21 @@
 module Control.Egison.Matcher (
   -- pattern
   ValuePat(..),
-  Pair(..),
   PairPat(..),
   CollectionPat(..),
-  -- data type of matcher
-  Eql(..),
-  Something(..),
-  List(..),
-  Multiset(..),
   -- matcher
+  Something(..),
+  something,
+  Eql(..),
   eql,
   integer,
-  something,
+  Pair(..),
+  pair,
+  List(..),
   list,
+  Multiset(..),
   multiset,
+  Set(..),
   set,
   ) where
 
@@ -38,8 +39,6 @@ import           Data.List.Unique
 class ValuePat mt a where
   valuePat :: Eq a => (HList ctx -> a) -> Pattern a ctx mt '[]
 
-data Pair a b = Pair a b
-
 class PairPat mt a where
   pairPat :: a ~ (b1, b2) => mt ~ Matcher (Pair m1 m2) => Pattern b1 ctx (Matcher m1) xs -> Pattern b2 (ctx :++: xs) (Matcher m2) ys -> Pattern a ctx mt (xs :++: ys)
 
@@ -52,10 +51,8 @@ class CollectionPat mt a where
 -- Matchers
 --
 
+-- something matcher
 data Something = Something
-
-integer :: Matcher Eql
-integer = eql
 
 something :: Matcher Something
 something = Matcher Something
@@ -69,7 +66,18 @@ eql = Matcher Eql
 instance Eq a => ValuePat (Matcher Eql) a where
   valuePat f = Pattern (\tgt ctx _ -> [MNil | f ctx == tgt])
 
+-- integer matcher
+data IntM = IntM
+
+integer :: Matcher IntM
+integer = Matcher IntM
+
+instance Integral a => ValuePat (Matcher IntM) a where
+  valuePat f = Pattern (\tgt ctx _ -> [MNil | f ctx == tgt])
+
 -- pair matcher
+data Pair a b = Pair a b
+
 pair :: Matcher a -> Matcher b -> Matcher (Pair a b)
 pair (Matcher m1) (Matcher m2) = Matcher (Pair m1 m2)
 
@@ -77,10 +85,11 @@ instance PairPat (Matcher (Pair m1 m2)) (a1, a2) where
   pairPat p1 p2 = Pattern (\(t1, t2) _ (Pair m1 m2) -> [MCons (MAtom p1 t1 m1) $ MCons (MAtom p2 t2 m2) MNil])
 
 -- list matcher
+newtype List a = List a
+
 list :: Matcher a -> Matcher (List a)
 list (Matcher m) = Matcher (List m)
 
-newtype List a = List a
 instance Eq a => ValuePat (Matcher (List m)) [a] where
   valuePat f = Pattern (\tgt ctx _ -> [MNil | f ctx == tgt])
 
