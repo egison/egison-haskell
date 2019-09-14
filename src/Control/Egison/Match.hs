@@ -7,7 +7,6 @@ module Control.Egison.Match (
   ) where
 
 import           Control.Egison.Core
-import           Unsafe.Coerce
 
 --
 -- Pattern-matching algorithm
@@ -16,7 +15,7 @@ import           Unsafe.Coerce
 matchAll :: a -> Matcher m -> PList a m b -> [b]
 matchAll tgt (Matcher m) PNil = []
 matchAll tgt (Matcher m) (PCons (pat, f) ps) =
-  let results = processMStatesAll [[MState HNil (MCons (MAtom pat tgt m) MNil)]] in
+  let results = processMStatesAll [[MState (MCons (MAtom pat tgt m) MNil) HNil]] in
   map f results ++ matchAll tgt (Matcher m) ps
 
 match :: a -> Matcher m -> PList a m b -> b
@@ -33,7 +32,7 @@ extractMatches = extractMatches' ([], [])
  where
    extractMatches' :: ([HList vs], [[MState vs]]) -> [[MState vs]] -> ([HList vs], [[MState vs]])
    extractMatches' (xs, ys) [] = (xs, ys)
-   extractMatches' (xs, ys) ((MState rs MNil:states):rest) =
+   extractMatches' (xs, ys) ((MState MNil rs:states):rest) =
      extractMatches' (xs ++ [rs], ys ++ [states]) rest
    extractMatches' (xs, ys) (stream:rest) = extractMatches' (xs, ys ++ [stream]) rest
 
@@ -42,22 +41,26 @@ processMStates []          = []
 processMStates (mstate:ms) = [processMState mstate, ms]
 
 processMState :: MState vs -> [MState vs]
-processMState (MState rs MNil) = [MState rs MNil]
-processMState (MState rs (MCons (MAtom pat tgt m) atoms)) =
+processMState (MState MNil rs) = [MState MNil rs]
+processMState (MState (MCons (MAtom pat tgt m) atoms) rs) =
   case pat of
     Pattern f ->
       let matomss = f tgt rs m in
-      map (\newAtoms -> MState rs (MJoin newAtoms atoms)) matomss
-    Wildcard -> [MState rs atoms]
-    PatVar _ -> [unsafeCoerce $ MState (happend rs (HCons tgt HNil)) atoms]
+      map (\newAtoms -> MState (MJoin newAtoms atoms) rs) matomss
+    Wildcard -> [MState atoms rs]
+    PatVar _ -> case proof2 rs (hsingle tgt) (mlToHList atoms) of Refl -> [MState atoms (happend rs (HCons tgt HNil))]
     AndPat p1 p2 ->
-      [unsafeCoerce $ MState rs (MCons (MAtom p1 tgt m) (MCons (MAtom p2 tgt m) $ unsafeCoerce atoms))]
+      case proof2 rs (maToHList $ MAtom p1 tgt m) (maToHList $ MAtom p2 tgt m) of
+        Refl -> case proof2 (maToHList $ MAtom p1 tgt m) (maToHList $ MAtom p2 tgt m) (mlToHList atoms) of
+                  Refl -> [MState (MCons (MAtom p1 tgt m) (MCons (MAtom p2 tgt m) atoms)) rs]
     OrPat p1 p2 ->
-      [MState rs (MCons (MAtom p1 tgt m) atoms), MState rs (MCons (MAtom p2 tgt m) atoms)]
+      [MState (MCons (MAtom p1 tgt m) atoms) rs, MState (MCons (MAtom p2 tgt m) atoms) rs]
     NotPat p ->
-      [MState rs atoms | null $ processMStatesAll [[MState rs $ MCons (MAtom p tgt m) MNil]]]
-    PredicatePat f -> [MState rs atoms | f rs tgt]
-processMState (MState rs (MJoin MNil matoms2)) = processMState (MState rs matoms2)
-processMState (MState rs (MJoin matoms1 matoms2)) =
-  let mstates = processMState (MState rs matoms1) in
-  map (\(MState rs' ms) -> unsafeCoerce $ MState rs' $ MJoin ms matoms2) mstates
+      [MState atoms rs | null $ processMStatesAll [[MState (MCons (MAtom p tgt m) MNil) rs]]]
+    PredicatePat f -> [MState atoms rs | f rs tgt]
+processMState (MState (MJoin MNil matoms2) rs) = processMState (MState matoms2 rs)
+processMState (MState (MJoin matoms1 matoms2) rs) =
+  let mstates = processMState (MState matoms1 rs) in
+  map (\(MState ms rs') -> case proof2 rs (mlToHList matoms1) (mlToHList matoms2) of
+                             Refl -> case proof2 rs' (mlToHList ms) (mlToHList matoms2)  of
+                                       Refl -> MState (MJoin ms matoms2) rs') mstates
