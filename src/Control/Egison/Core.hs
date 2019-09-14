@@ -47,7 +47,8 @@ data PList a m b where
 (.*.) :: (Pattern a '[] (Matcher m) vs, HList vs -> b) -> PList a m b -> PList a m b
 x .*. xs = PCons x xs
 
-infixr 0 .*.
+infixr 5 .*.
+infixr 5 :++:
 
 happend :: HList as -> HList bs -> HList (as :++: bs)
 happend (HCons x xs) ys = unsafeCoerce $ HCons x $ happend xs ys
