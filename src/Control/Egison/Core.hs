@@ -19,7 +19,6 @@ module Control.Egison.Core (
   ) where
 
 import           Data.Maybe
-import           Unsafe.Coerce
 
 --
 -- Matching states
@@ -51,13 +50,20 @@ infixr 5 .*.
 infixr 5 :++:
 
 happend :: HList as -> HList bs -> HList (as :++: bs)
-happend (HCons x xs) ys = unsafeCoerce $ HCons x $ happend xs ys
+happend (HCons x xs) ys = case proof x xs ys of Refl -> HCons x $ happend xs ys
 happend HNil ys         = ys
 
 type family as :++: bs :: [*] where
   bs :++: '[] = bs
   '[] :++: bs = bs
-  (a ': as') :++: bs = a ': (as' :++: bs)
+  (a ': as) :++: bs = a ': (as :++: bs)
+
+data (a :: [*]) :~: (b :: [*]) where
+  Refl :: a :~: a
+
+proof :: a -> HList as -> HList bs -> ((a ': as) :++: bs) :~: (a ': (as :++: bs))
+proof _ _ HNil = Refl
+proof x xs (HCons y ys) = Refl
 
 --
 -- Pattern
