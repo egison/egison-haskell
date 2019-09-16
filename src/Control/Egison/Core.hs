@@ -96,17 +96,17 @@ proof1 _ = Refl
 proof2 :: HList as -> HList bs -> HList cs -> (as :++: (bs :++: cs)) :~: ((as :++: bs) :++: cs)
 proof2 l1 HNil l3 = case proof1 l1 of Refl -> Refl
 proof2 l1 (HCons x xs) l3 = case proof4 x xs l3 of
-                              Refl -> case proof3 l1 (HCons x (happend xs l3)) of
+                              Refl -> case proof3 l1 x (happend xs l3) of
                                         Refl -> case proof2 (hadd l1 x) xs l3 of
-                                                  Refl -> case proof3 l1 (HCons x xs) of
+                                                  Refl -> case proof3 l1 x xs of
                                                             Refl -> Refl
 
-proof3 :: HList as -> HList (b ': bs) -> (as :++: (b ': bs)) :~: ((as :++: '[b]) :++: bs)
-proof3 HNil (HCons y ys) = case proof5 y ys of Refl -> Refl
-proof3 (HCons x xs) l2@(HCons y ys) = case proof4 x xs l2 of
+proof3 :: HList as -> b -> HList bs -> (as :++: (b ': bs)) :~: ((as :++: '[b]) :++: bs)
+proof3 HNil y ys = case proof5 y ys of Refl -> Refl
+proof3 (HCons x xs) y ys = case proof4 x xs (HCons y ys) of
                            Refl -> case proof4 x xs (hsingle ys) of
                                      Refl -> case proof4 x (hadd xs y) ys of
-                                               Refl -> case proof3 xs l2 of Refl -> Refl
+                                               Refl -> case proof3 xs y ys of Refl -> Refl
 
 proof4 :: a -> HList as -> HList bs -> ((a ': as) :++: bs) :~: (a ': (as :++: bs))
 proof4 _ _ HNil = Refl
