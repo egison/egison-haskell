@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE TypeOperators             #-}
+-- {-# LANGUAGE RankNTypes #-}
 
 module Control.Egison.Core (
   MState(..),
@@ -11,7 +12,7 @@ module Control.Egison.Core (
   Matcher(..),
   HList(..),
   MList(..),
-  PList(..),
+  MatchClause(..),
   (.*.),
   happend,
   (:++:),
@@ -34,14 +35,13 @@ data HList xs where
   HNil :: HList '[]
   HCons :: a -> HList as -> HList (a ': as)
 
+-- List of pattern-matching results
 data MList ctx vs where
   MNil :: MList ctx '[]
   MCons :: MAtom ctx xs -> MList (ctx :++: xs) ys -> MList ctx (xs :++: ys)
   MJoin :: MList ctx xs -> MList (ctx :++: xs) ys -> MList ctx (xs :++: ys)
 
-data PList a m b where
-  PNil :: PList a m b
-  PCons :: (Pattern a '[] (Matcher m) vs, HList vs -> b) -> PList a m b -> PList a m b
+data MatchClause a m b = forall vs. MatchClause (Pattern a '[] (Matcher m) vs) (HList vs -> b)
 
 (.*.) :: (Pattern a '[] (Matcher m) vs, HList vs -> b) -> PList a m b -> PList a m b
 x .*. xs = PCons x xs

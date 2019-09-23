@@ -40,7 +40,7 @@ changeValuePat pat = subRegex (mkRegex "\\#(\\([^)]+\\)|\\[[^)]+\\]|[a-zA-Z0-9]+
 mcChange :: Exp -> Exp -> Q Exp
 mcChange pat expr = do
   let (vars, xs) = extractPatVars [pat] []
-  [| ($(fst <$> changePat pat (map (`take` vars) xs)), $(changeExp vars expr)) |]
+  [| (MatchClause $(fst <$> changePat pat (map (`take` vars) xs)) $(changeExp vars expr)) |]
 
 -- extract patvars from pattern
 extractPatVars :: [Exp] -> [String] -> ([String], [Int])

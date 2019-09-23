@@ -13,13 +13,13 @@ import           Unsafe.Coerce
 -- Pattern-matching algorithm
 --
 
-matchAll :: a -> Matcher m -> PList a m b -> [b]
-matchAll tgt (Matcher m) PNil = []
-matchAll tgt (Matcher m) (PCons (pat, f) ps) =
+matchAll :: a -> Matcher m -> [MatchClause a m b] -> [b]
+matchAll tgt (Matcher m) [] = []
+matchAll tgt (Matcher m) ((MatchClause pat f):cs) =
   let results = processMStatesAll [[MState HNil (MCons (MAtom pat tgt m) MNil)]] in
-  map f results ++ matchAll tgt (Matcher m) ps
+  map f results ++ matchAll tgt (Matcher m) cs
 
-match :: a -> Matcher m -> PList a m b -> b
+match :: a -> Matcher m -> [MatchClause a m b] -> b
 match tgt m xs = head $ matchAll tgt m xs
 
 processMStatesAll :: [[MState vs]] -> [HList vs]
