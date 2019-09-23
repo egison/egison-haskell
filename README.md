@@ -1,4 +1,7 @@
-# Template Haskell Implementation of Egison Pattern Matching
+# miniEgison: Template Haskell Implementation of Egison Pattern Matching
+
+This Haskell library provides the users with the pattern-matching facility against non-free data types.
+This pattern-matching facility is originally proposed in [this paper](https://arxiv.org/abs/1808.10603) and implemented in [the Egison programming language](http://github.com/egison/egison/).
 
 ## Grammar
 
@@ -16,6 +19,22 @@ p = _                       -- wildcard
   | $x                      -- pattern variable
   | #e                      -- value pattern
   | c p ...                 -- constructor pattern
+```
+
+## Usage
+
+Non-free data types are data types whose data have no standard forms.
+For example, multisets are non-free data types because the multiset {a,b,b} has two other equivalent but literally different forms {b,a,b} and {b,b,a}.
+This library provides the users with a pattern-matching facility for these non-free data types.
+
+For example, the following program pattern-matches a list `[1,2,5,9,4]` as a multiset.
+This pattern matches if the target collection contains pairs of elements in sequence.
+A non-linear pattern is effectively used for expressing the pattern.
+`matchAll` returns a list of all the results.
+
+```
+matchAll [1,2,5,9,4] (multiset integer) [[mc| cons $x (cons #(x+1) _) => x]]
+-- [1,4]
 ```
 
 ## Samples
