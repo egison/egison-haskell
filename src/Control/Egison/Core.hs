@@ -13,7 +13,6 @@ module Control.Egison.Core (
   HList(..),
   MList(..),
   MatchClause(..),
-  (.*.),
   happend,
   (:++:),
   Pattern(..),
@@ -42,12 +41,6 @@ data MList ctx vs where
   MJoin :: MList ctx xs -> MList (ctx :++: xs) ys -> MList ctx (xs :++: ys)
 
 data MatchClause a m b = forall vs. MatchClause (Pattern a '[] (Matcher m) vs) (HList vs -> b)
-
-(.*.) :: (Pattern a '[] (Matcher m) vs, HList vs -> b) -> PList a m b -> PList a m b
-x .*. xs = PCons x xs
-
-infixr 5 .*.
-infixr 5 :++:
 
 happend :: HList as -> HList bs -> HList (as :++: bs)
 happend (HCons x xs) ys = case proof x xs ys of Refl -> HCons x $ happend xs ys

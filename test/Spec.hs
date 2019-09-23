@@ -36,9 +36,14 @@ spec = do
       matchAll [1,2,5,9,4] (multiset integer) [[mc| cons $x $xs => (x, xs) |]]
       `shouldBe` [(1,[2,5,9,4]),(2,[1,5,9,4]),(5,[1,2,9,4]),(9,[1,2,5,4]),(4,[1,2,5,9])]
 
-    it "pattern matching with infinitely many results" $
+    it "pattern matching with infinitely many results (p, p+2)" $
       take 10 (matchAll primes (list integer)
-                 [[mc| join Wildcard (cons $p (join Wildcard (cons #(p+6) Wildcard))) => (p, p+6) |]])
+                 [[mc| join _ (cons $p (cons #(p+2) _)) => (p, p+2) |]])
+      `shouldBe` [(3,5),(5,7),(11,13),(17,19),(29,31),(41,43),(59,61),(71,73),(101,103),(107,109)]
+
+    it "pattern matching with infinitely many results (p, p+6)" $
+      take 10 (matchAll primes (list integer)
+                 [[mc| join _ (cons $p (join _ (cons #(p+6) _))) => (p, p+6) |]])
       `shouldBe` [(5,11),(7,13),(11,17),(13,19),(17,23),(23,29),(31,37),(37,43),(41,47),(47,53)]
 
     it "Value patterns, and-patterns, or-patterns, and not-patterns" $
