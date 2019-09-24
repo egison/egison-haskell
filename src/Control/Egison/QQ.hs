@@ -20,7 +20,7 @@ import           Useful.Dictionary
 mc :: QuasiQuoter
 mc = QuasiQuoter { quoteExp = \s -> do
                       let (pat, exp) = strSplit "=>" s
-                      e1 <- case parseExp (changeValuePat (changePatVar (changeWildcard pat))) of
+                      e1 <- case parseExp (changeNotPat (changeOrPat (changeAndPat (changeValuePat (changePatVar (changeWildcard pat)))))) of
                               Left _ -> fail "Could not parse pattern expression."
                               Right exp -> return exp
                       e2 <- case parseExp exp of
@@ -39,6 +39,15 @@ changePatVar pat = subRegex (mkRegex "\\$([a-zA-Z0-9]+)") pat "(PatVar \"\\1\")"
 
 changeValuePat :: String -> String
 changeValuePat pat = subRegex (mkRegex "\\#(\\([^)]+\\)|\\[[^)]+\\]|[a-zA-Z0-9]+)") pat "(valuePat \\1)"
+
+changeAndPat :: String -> String
+changeAndPat pat = subRegex (mkRegex "\\(\\&") pat "(AndPat"
+
+changeOrPat :: String -> String
+changeOrPat pat = subRegex (mkRegex "\\(\\|") pat "(OrPat"
+
+changeNotPat :: String -> String
+changeNotPat pat = subRegex (mkRegex "\\(not ") pat "(NotPat "
 
 mcChange :: Exp -> Exp -> Q Exp
 mcChange pat expr = do

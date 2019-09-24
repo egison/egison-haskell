@@ -18,7 +18,7 @@ C = [mc| p => e]            -- match clause
 p = _                       -- wildcard
   | $x                      -- pattern variable
   | #e                      -- value pattern
-  | c p ...                 -- constructor pattern
+  | (c p ...)               -- constructor pattern
 ```
 
 ## Usage
