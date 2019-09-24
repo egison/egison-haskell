@@ -41,16 +41,16 @@ processMStatesAllDFS (mstate:ms) = processMStatesAllDFS $ (processMState mstate)
 processMStatesAll :: [[MState vs]] -> [HList vs]
 processMStatesAll [] = []
 processMStatesAll streams =
-  let (results, streams') = extractMatches $ concatMap processMStates streams
-   in results ++ processMStatesAll streams'
+  case extractMatches $ concatMap processMStates streams of
+    ([], streams') -> processMStatesAll streams'
+    (results, streams') -> results ++ processMStatesAll streams'
 
 extractMatches :: [[MState vs]] -> ([HList vs], [[MState vs]])
 extractMatches = extractMatches' ([], [])
  where
    extractMatches' :: ([HList vs], [[MState vs]]) -> [[MState vs]] -> ([HList vs], [[MState vs]])
    extractMatches' (xs, ys) [] = (xs, ys)
-   extractMatches' (xs, ys) ((MState rs MNil:states):rest) =
-     extractMatches' (xs ++ [rs], ys ++ [states]) rest
+   extractMatches' (xs, ys) ((MState rs MNil:[]):rest) = extractMatches' (xs ++ [rs], ys) rest
    extractMatches' (xs, ys) (stream:rest) = extractMatches' (xs, ys ++ [stream]) rest
 
 processMStates :: [MState vs] -> [[MState vs]]
@@ -58,7 +58,6 @@ processMStates []          = []
 processMStates (mstate:ms) = [processMState mstate, ms]
 
 processMState :: MState vs -> [MState vs]
-processMState (MState rs MNil) = [MState rs MNil]
 processMState (MState rs (MCons (MAtom pat tgt m) atoms)) =
   case pat of
     Pattern f ->
@@ -77,4 +76,5 @@ processMState (MState rs (MJoin MNil matoms2)) = processMState (MState rs matoms
 processMState (MState rs (MJoin matoms1 matoms2)) =
   let mstates = processMState (MState rs matoms1) in
   map (\(MState rs' ms) -> unsafeCoerce $ MState rs' $ MJoin ms matoms2) mstates
+processMState (MState rs MNil) = [MState rs MNil] -- never reaches here
 
