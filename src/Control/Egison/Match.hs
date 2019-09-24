@@ -49,10 +49,8 @@ extractMatches :: [[MState vs]] -> ([HList vs], [[MState vs]])
 extractMatches = extractMatches' ([], [])
  where
    extractMatches' :: ([HList vs], [[MState vs]]) -> [[MState vs]] -> ([HList vs], [[MState vs]])
-   extractMatches' (xs, ys) [] = (reverse xs,  reverse ys)
---   extractMatches' (xs, ys) ((MState rs MNil:[]):rest) = extractMatches' (xs ++ [rs], ys) rest -- very slow
+   extractMatches' (xs, ys) [] = (reverse xs,  reverse ys) -- These calls of the reverse function are very important for performance.
    extractMatches' (xs, ys) ((MState rs MNil:[]):rest) = extractMatches' (rs:xs, ys) rest
---   extractMatches' (xs, ys) (stream:rest) = extractMatches' (xs, ys ++ [stream]) rest -- very slow
    extractMatches' (xs, ys) (stream:rest) = extractMatches' (xs, stream:ys) rest
 
 processMStates :: [MState vs] -> [[MState vs]]
@@ -78,5 +76,5 @@ processMState (MState rs (MJoin MNil matoms2)) = processMState (MState rs matoms
 processMState (MState rs (MJoin matoms1 matoms2)) =
   let mstates = processMState (MState rs matoms1) in
   map (\(MState rs' ms) -> unsafeCoerce $ MState rs' $ MJoin ms matoms2) mstates
-processMState (MState rs MNil) = [MState rs MNil] -- never reaches here
+processMState (MState rs MNil) = [MState rs MNil] -- TODO: shold not reach here but reaches here.
 

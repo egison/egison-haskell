@@ -4,7 +4,6 @@
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE TypeOperators             #-}
--- {-# LANGUAGE RankNTypes #-}
 
 module Control.Egison.Core (
   MState(..),
@@ -20,14 +19,16 @@ module Control.Egison.Core (
 
 import           Data.Maybe
 
---
--- Matching states
---
+---
+--- Matching states
+---
 
 data MState vs where
   MState :: vs ~ (xs :++: ys) => HList xs -> MList xs ys -> MState vs
 
--- matching atom -- ctx: intermediate pattern-matching results, vs: list of types bound to the pattern variables in the pattern.
+-- matching atom
+-- ctx: intermediate pattern-matching results
+-- vs: list of types bound to the pattern variables in the pattern.
 data MAtom ctx vs = forall a m. MAtom (Pattern a ctx (Matcher m) vs) a m
 
 newtype Matcher a = Matcher a
@@ -60,16 +61,20 @@ proof :: a -> HList as -> HList bs -> ((a ': as) :++: bs) :~: (a ': (as :++: bs)
 proof _ _ HNil = Refl
 proof x xs (HCons y ys) = Refl
 
---
--- Pattern
---
+---
+--- Pattern
+---
 
+-- a: the type of the target
+-- ctx: the intermediate pattern-matching result
+-- mt: a matcher passed to the pattern
+-- vs: the list of types bound to the pattern variables in the pattern.
 data Pattern a ctx mt vs where
-  Pattern :: mt ~ Matcher m => (a -> HList ctx -> m -> [MList ctx vs]) -> Pattern a ctx mt vs
-
   Wildcard :: Pattern a ctx mt '[]
   PatVar :: String -> Pattern a ctx mt '[a]
   AndPat :: Pattern a ctx mt vs -> Pattern a (ctx :++: vs) mt vs' -> Pattern a ctx mt (vs :++: vs')
   OrPat  :: Pattern a ctx mt vs -> Pattern a ctx mt vs -> Pattern a ctx mt vs
   NotPat :: Pattern a ctx mt '[] -> Pattern a ctx mt '[]
   PredicatePat :: (HList ctx -> a -> Bool) -> Pattern a ctx mt '[]
+  -- User-defined pattern; pattern is a function that takes a target, an intermediate pattern-matching result, and a matcher and returns a list of lists of matching atoms.
+  Pattern :: mt ~ Matcher m => (a -> HList ctx -> m -> [MList ctx vs]) -> Pattern a ctx mt vs
