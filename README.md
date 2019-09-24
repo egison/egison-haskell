@@ -64,9 +64,42 @@ preparing...
 
 ## Benchmark
 
+We benchmarked this library using the program that enumerates the first 100 twin primes.
+This Haskell library is much faster (100 times in this case) than the original Egison interpreter!
+
 ```
-$ stack ghc -- sample/benchmark.hs
-$ time ./sample/benchmark > /dev/null
+$ cat benchmark/prime-pairs-2.hs
+{-# LANGUAGE QuasiQuotes     #-}
+{-# LANGUAGE GADTs           #-}
+
+import Control.Egison
+import Data.Numbers.Primes
+
+main :: IO ()
+main = do
+  let n = 100
+  let ans = take n (matchAll primes (list integer)
+                     [[mc| join _ (cons $p (cons #(p+2) _)) => (p, p+2) |]])
+  putStrLn $ show ans
+$ stack ghc -- benchmark/prime-pairs-2.hs
+$ time ./benchmark/prime-pairs-2
+[(3,5),(5,7),(11,13), ..., (3671,3673),(3767,3769),(3821,3823)]
+./benchmark/prime-pairs-2  0.01s user 0.02s system 15% cpu 0.167 total
+```
+
+```
+$ cat benchmark/prime-pairs-2.egi
+(define $n 100)
+
+(define $twin-primes
+  (match-all primes (list integer)
+    [<join _ <cons $p <cons ,(+ p 2) _>>>
+     [p (+ p 2)]]))
+
+(take n twin-primes)
+$ time stack exec egison -- -t benchmark/prime-pairs-2.egi
+{[3 5] [5 7] [11 13] ... [3671 3673] [3767 3769] [3821 3823]}
+stack exec egison -- -t benchmark/prime-pairs-2.egi  8.77s user 0.19s system 99% cpu 9.030 total
 ```
 
 ## Sponsors
