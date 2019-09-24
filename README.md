@@ -1,7 +1,11 @@
 # miniEgison: Template Haskell Implementation of Egison Pattern Matching
 
 This Haskell library provides the users with the pattern-matching facility against non-free data types.
-This pattern-matching facility is originally proposed in [this paper](https://arxiv.org/abs/1808.10603) and implemented in [the Egison programming language](http://github.com/egison/egison/).
+Non-free data types are data types whose data have no standard forms.
+For example, multisets are non-free data types because the multiset {a,b,b} has two other equivalent but literally different forms {b,a,b} and {b,b,a}.
+This library provides the pattern-matching facility that fulfills the following three criteria for practical pattern matching for non-free data types: (i) non-linear pattern matching with backtracking; (ii) extensibility of pattern-matching algorithms; (iii) ad-hoc polymorphism of patterns.
+
+The design of the pattern-matching facility is originally proposed in [this paper](https://arxiv.org/abs/1808.10603) and implemented in [the Egison programming language](http://github.com/egison/egison/).
 
 ## Grammar
 
@@ -18,19 +22,51 @@ C = [mc| p => e]            -- match clause
 p = _                       -- wildcard
   | $x                      -- pattern variable
   | #e                      -- value pattern
-  | (c p ...)               -- constructor pattern
+  | (& p ...)               -- and-pattern
+  | (| p ...)               -- or-pattern
+  | (not p)                 -- not-pattern
 ```
 
 ## Usage
 
-Non-free data types are data types whose data have no standard forms.
-For example, multisets are non-free data types because the multiset {a,b,b} has two other equivalent but literally different forms {b,a,b} and {b,b,a}.
-This library provides the users with a pattern-matching facility for these non-free data types.
+### The `matchAll` expression and matchers
 
-For example, the following program pattern-matches a list `[1,2,5,9,4]` as a multiset.
-This pattern matches if the target collection contains pairs of elements in sequence.
+The `matchAll` expression evaluates the body of the match clause for all the pattern-matching results.
+The expression below pattern-matches a target `[1,2,3]` as a list of integers with a pattern `cons $x $xs`.
+This expression returns a list of a single element because there is only one decomposition.
+
+```
+matchAll [1,2,3] (list integer) [[mc| cons $x $xs => (x, xs)]]
+-- [(1,[2,3])]
+```
+
+The other characteristic of `matchAll` is its additional argument matcher.
+A matcher is a special object that retains the pattern-matching algorithms for each data type.
+`matchAll` takes a matcher as its second argument.
+We can change a way to interpret a pattern by changing a matcher.
+
+For example, by changing the matcher of the above `matchAll` from `list integer` to `multiset integer`, the evaluation result changes as follows:
+
+```
+matchAll [1,2,3] (multiset integer) [[mc| cons $x $xs => (x, xs)]]
+-- [(1,[2,3]),(2,[1,3]),(3,[1,2])]
+```
+
+When the `multiset` matcher is used, the `cons` pattern decomposes a target list into an element and the rest elements.
+
+The pattern-matching algorithms for each matcher can be defined by users.
+For example, the matchers such as `list` and `multiset` can be defined by users.
+The `something` matcher is the only built-in matcher.
+`something` can be used for pattern-matching arbitrary objects but can handle only pattern variables and wildcards.
+The definitions of `list` and `multiset` are found [here](https://github.com/egison/egison-haskell/blob/master/src/Control/Egison/Matcher.hs).
+We will write an explanation of this definition in future.
+
+### Non-linear pattern
+
+Non-linear pattern matching is another important feature of Egison pattern matching.
+Non-linear patterns are patterns that allow multiple occurrences of the same pattern variables in a pattern.
+For example, the program below pattern-matches a list `[1,2,5,9,4]` as a multiset and extracts pairs of sequential elements.
 A non-linear pattern is effectively used for expressing the pattern.
-`matchAll` returns a list of all the results.
 
 ```
 matchAll [1,2,5,9,4] (multiset integer) [[mc| cons $x (cons #(x+1) _) => x]]
