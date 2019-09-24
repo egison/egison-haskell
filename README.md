@@ -9,12 +9,14 @@ The design of the pattern-matching facility is originally proposed in [this pape
 
 ## Grammar
 
-This library provides two syntax constructs, `matchAll` and `match` for advanced pattern matching for non-free data types.
+This library provides two syntax constructs, `matchAll`, `match`, `matchAllDFS`, and `matchDFS` for advanced pattern matching for non-free data types.
 
 ```
 e = hs-expr                 -- arbitrary Haskell expression
   | matchAll e e [C, ...]   -- match-all expression
   | match e e [C, ...]      -- match expression
+  | matchAllDFS e e [C, ...]   -- match-all expression
+  | matchDFS e e [C, ...]      -- match expression
   | something               -- Something built-in matcher
 
 C = [mc| p => e]            -- match clause
@@ -72,6 +74,14 @@ A non-linear pattern is effectively used for expressing the pattern.
 matchAll [1,2,5,9,4] (multiset integer) [[mc| cons $x (cons #(x+1) _) => x]]
 -- [1,4]
 ```
+
+### The `match` expression
+
+preparing...
+
+### `matchAllDFS` and `matchDFS`
+
+preparing...
 
 ## Samples
 
