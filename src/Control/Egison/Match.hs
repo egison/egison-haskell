@@ -49,9 +49,11 @@ extractMatches :: [[MState vs]] -> ([HList vs], [[MState vs]])
 extractMatches = extractMatches' ([], [])
  where
    extractMatches' :: ([HList vs], [[MState vs]]) -> [[MState vs]] -> ([HList vs], [[MState vs]])
-   extractMatches' (xs, ys) [] = (xs, ys)
-   extractMatches' (xs, ys) ((MState rs MNil:[]):rest) = extractMatches' (xs ++ [rs], ys) rest
-   extractMatches' (xs, ys) (stream:rest) = extractMatches' (xs, ys ++ [stream]) rest
+   extractMatches' (xs, ys) [] = (reverse xs,  reverse ys)
+--   extractMatches' (xs, ys) ((MState rs MNil:[]):rest) = extractMatches' (xs ++ [rs], ys) rest -- very slow
+   extractMatches' (xs, ys) ((MState rs MNil:[]):rest) = extractMatches' (rs:xs, ys) rest
+--   extractMatches' (xs, ys) (stream:rest) = extractMatches' (xs, ys ++ [stream]) rest -- very slow
+   extractMatches' (xs, ys) (stream:rest) = extractMatches' (xs, stream:ys) rest
 
 processMStates :: [MState vs] -> [[MState vs]]
 processMStates []          = []
