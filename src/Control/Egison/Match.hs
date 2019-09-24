@@ -9,10 +9,6 @@ module Control.Egison.Match (
 import           Control.Egison.Core
 import           Unsafe.Coerce
 
---
--- Pattern-matching algorithm
---
-
 matchAll :: a -> Matcher m -> [MatchClause a m b] -> [b]
 matchAll tgt (Matcher m) [] = []
 matchAll tgt (Matcher m) ((MatchClause pat f):cs) =
@@ -21,6 +17,10 @@ matchAll tgt (Matcher m) ((MatchClause pat f):cs) =
 
 match :: a -> Matcher m -> [MatchClause a m b] -> b
 match tgt m xs = head $ matchAll tgt m xs
+
+--
+-- Pattern-matching algorithm
+--
 
 processMStatesAll :: [[MState vs]] -> [HList vs]
 processMStatesAll [] = []

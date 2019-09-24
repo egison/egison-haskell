@@ -121,8 +121,10 @@ instance (Eq a,  ValuePat (Matcher m) a) => ValuePat (Matcher (Multiset m)) [a] 
 instance CollectionPat (Matcher (Multiset m)) [a] where
   nil = Pattern (\tgt ctx _ -> [MNil | null tgt])
   cons p Wildcard = Pattern (\tgt ctx (Multiset m) -> map (\x -> MCons (MAtom p x m) MNil) tgt)
-  cons p1 p2 = Pattern (\tgt ctx (Multiset m) -> map (\(x, xs) -> MCons (MAtom p1 x m) $ MCons (MAtom p2 xs $ Multiset m) MNil) $ matchAll tgt (list $ Matcher m) [[mc| join $hs (cons $x $ts) => (x, hs ++ ts) |]])
-  join p1 p2 = Pattern (\tgt ctx m -> map (\(xs, ys) -> MCons (MAtom p1 xs m) $ MCons (MAtom p2 ys m) MNil) $ concatMap (`unjoinM` tgt) [0..(length tgt)])
+  cons p1 p2 = Pattern (\tgt ctx (Multiset m) -> map (\(x, xs) -> MCons (MAtom p1 x m) $ MCons (MAtom p2 xs $ Multiset m) MNil)
+                                                     (matchAll tgt (list $ Matcher m) [[mc| join $hs (cons $x $ts) => (x, hs ++ ts) |]]))
+  join p1 p2 = Pattern (\tgt ctx m -> map (\(xs, ys) -> MCons (MAtom p1 xs m) $ MCons (MAtom p2 ys m) MNil)
+                                          (concatMap (`unjoinM` tgt) [0..(length tgt)]))
 
 unjoinM :: Int -> [a] -> [([a], [a])]
 unjoinM 0 xs = [([], xs)]
