@@ -27,14 +27,16 @@ import           Data.Maybe
 data MState vs where
   MState :: vs ~ (xs :++: ys) => HList xs -> MList xs ys -> MState vs
 
+-- ctx: intermediate pattern-matching results, vs: list of types bound to the pattern variables in the pattern.
 data MAtom ctx vs = forall a m. MAtom (Pattern a ctx (Matcher m) vs) a m
+
 newtype Matcher a = Matcher a
 
 data HList xs where
   HNil :: HList '[]
   HCons :: a -> HList as -> HList (a ': as)
 
--- List of pattern-matching results
+-- List of matching atoms
 data MList ctx vs where
   MNil :: MList ctx '[]
   MCons :: MAtom ctx xs -> MList (ctx :++: xs) ys -> MList ctx (xs :++: ys)

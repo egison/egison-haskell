@@ -61,6 +61,14 @@ take 10 (matchAll primes (list integer)
 
 preparing...
 
+
+## Benchmark
+
+```
+$ stack ghc -- sample/benchmark.hs
+$ time ./sample/benchmark > /dev/null
+```
+
 ## Sponsors
 
 Egison is sponsored by [Rakuten, Inc.](http://global.rakuten.com/corp/) and [Rakuten Institute of Technology](http://rit.rakuten.co.jp/).
