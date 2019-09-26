@@ -1,6 +1,6 @@
 {-# LANGUAGE QuasiQuotes     #-}
 {-# LANGUAGE GADTs           #-}
-{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE TypeOperators   #-}
 
 import Control.Egison hiding (Integer)
 import qualified Control.Egison as M

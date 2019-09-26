@@ -1,19 +1,12 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.31.2.
---
--- see: https://github.com/sol/hpack
---
--- hash: fc4fd13b39643059f0c2fb0a175a83ce58c9379e9f0c03354f36aa894600d515
-
-name:           egison-haskell
+name:           mini-egison
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/egison/egison-haskell#readme>
+description:    Template Haskell Implementation of Egison Pattern Matching
 homepage:       https://github.com/egison/egison-haskell#readme
 bug-reports:    https://github.com/egison/egison-haskell/issues
-author:         kotapiku, Satoshi Egi
-maintainer:     kotapiku <ice08235523@gmail.com>
-copyright:      2019, kotapiku
+author:         Mayuko Kori, Satoshi Egi
+maintainer:     Satoshi Egi <egi@egison.org>
 license:        MIT
 license-file:   LICENSE
 build-type:     Simple
@@ -33,32 +26,30 @@ library
       Control.Egison.Matcher
       Control.Egison.QQ
   other-modules:
-      Paths_egison_haskell
+      Paths_mini_egison
   hs-source-dirs:
       src
   build-depends:
-      Unique
-    , Useful
-    , base >=4.7 && <5
+      base >=4.7 && <5
     , containers
+    , split
     , haskell-src-meta
     , regex-compat
-    , strings
     , template-haskell
   default-language: Haskell2010
 
-test-suite egison-haskell-test
+test-suite mini-egison-test
   type: exitcode-stdio-1.0
   main-is: Test.hs
   other-modules:
       Spec
-      Paths_egison_haskell
+      Paths_mini_egison
   hs-source-dirs:
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , egison-haskell
+    , mini-egison
     , hspec
     , primes
   default-language: Haskell2010

@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -27,7 +26,6 @@ import           Prelude hiding (Integer)
 import           Control.Egison.Core
 import           Control.Egison.Match
 import           Control.Egison.QQ
-import           Data.List.Unique
 
 --
 -- Something matcher
@@ -125,11 +123,7 @@ newtype Set a = Set a
 instance (Matcher a) => Matcher (Set a)
 
 instance (Matcher m, Eq a,  Ord a, ValuePat m a) => ValuePat (Set m) [a] where
-  valuePat f = Pattern (\ctx (Set m) tgt ->
-                  match (unique (f ctx), unique tgt) (Pair (List m) (Multiset m)) $
-                    [[mc| pair nil nil => [MNil] |],
-                     [mc| pair (cons $x $xs) (cons #x #xs) => [MNil] |],
-                     [mc| Wildcard => [] |]])
+  valuePat f = undefined
 
 instance Matcher m => CollectionPat (Set m) [a] where
   nil = Pattern (\_ _ tgt -> [MNil | null tgt])

@@ -7,19 +7,20 @@ module Control.Egison.QQ (
 
 import           Control.Egison.Core
 import           Data.List
+import           Data.List.Split
 import           Data.Map                   (Map)
 import           Data.Maybe                 (fromMaybe)
-import           Data.Strings
 import           Language.Haskell.Meta
 import           Language.Haskell.TH        hiding (match)
 import           Language.Haskell.TH.Quote
 import           Language.Haskell.TH.Syntax
 import           Text.Regex
-import           Useful.Dictionary
+
+
 
 mc :: QuasiQuoter
 mc = QuasiQuoter { quoteExp = \s -> do
-                      let (pat, exp) = strSplit "=>" s
+                      let [pat, exp] = splitOn "=>" s
                       e1 <- case parseExp (changeNotPat (changeOrPat (changeAndPat (changeValuePat (changePatVar (changeWildcard pat)))))) of
                               Left _ -> fail "Could not parse pattern expression."
                               Right exp -> return exp
