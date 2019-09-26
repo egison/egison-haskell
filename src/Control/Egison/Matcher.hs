@@ -115,7 +115,7 @@ instance (Matcher m) => CollectionPat (Multiset m) [a] where
   nil = Pattern (\_ _ tgt -> [MNil | null tgt])
   cons p Wildcard = Pattern (\_ (Multiset m) tgt -> map (\x -> MCons (MAtom p m x) MNil) tgt)
   cons p1 p2 = Pattern (\_ (Multiset m) tgt -> map (\(x, xs) -> MCons (MAtom p1 m x) $ MCons (MAtom p2 (Multiset m) xs) MNil)
-                                                     (matchAll tgt (List m) [[mc| join $hs (cons $x $ts) => (x, hs ++ ts) |]]))
+                                                   (matchAll tgt (List m) [[mc| join $hs (cons $x $ts) => (x, hs ++ ts) |]]))
   join p1 p2 = undefined
 
 -- Set matcher
