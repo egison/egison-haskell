@@ -68,7 +68,7 @@ class PairPat mt a where
   pair :: (Matcher mt, a ~ (b1, b2), mt ~ (Pair m1 m2)) => Pattern b1 ctx m1 xs -> Pattern b2 (ctx :++: xs) m2 ys -> Pattern a ctx mt (xs :++: ys)
 
 instance (Matcher m1, Matcher m2) => PairPat (Pair m1 m2) (a1, a2) where
-  pair p1 p2 = Pattern (\(t1, t2) _ (Pair m1 m2) -> [MCons (MAtom p1 t1 m1) $ MCons (MAtom p2 t2 m2) MNil])
+  pair p1 p2 = Pattern (\(t1, t2) _ (Pair m1 m2) -> [MCons (MAtom p1 m1 t1) $ MCons (MAtom p2 m2 t2) MNil])
 
 ---
 --- Matchers for collections
@@ -91,8 +91,8 @@ instance Matcher m => CollectionPat (List m) [a] where
   cons p1 p2 = Pattern (\tgt ctx (List m) ->
                               case tgt of
                                 [] -> []
-                                x:xs -> [MCons (MAtom p1 x m) $ MCons (MAtom p2 xs $ List m) MNil])
-  join p1 p2 = Pattern (\tgt ctx m -> map (\(hs, ts) -> MCons (MAtom p1 hs m) $ MCons (MAtom p2 ts m) MNil) (unjoin tgt))
+                                x:xs -> [MCons (MAtom p1 m x) $ MCons (MAtom p2 (List m) xs) MNil])
+  join p1 p2 = Pattern (\tgt ctx m -> map (\(hs, ts) -> MCons (MAtom p1 m hs) $ MCons (MAtom p2 m ts) MNil) (unjoin tgt))
 
 unjoin :: [a] -> [([a], [a])]
 unjoin []     = [([], [])]
@@ -111,10 +111,10 @@ instance (Matcher m, Eq a, ValuePat m a) => ValuePat (Multiset m) [a] where
 
 instance (Matcher m) => CollectionPat (Multiset m) [a] where
   nil = Pattern (\tgt ctx _ -> [MNil | null tgt])
-  cons p Wildcard = Pattern (\tgt ctx (Multiset m) -> map (\x -> MCons (MAtom p x m) MNil) tgt)
-  cons p1 p2 = Pattern (\tgt ctx (Multiset m) -> map (\(x, xs) -> MCons (MAtom p1 x m) $ MCons (MAtom p2 xs $ Multiset m) MNil)
+  cons p Wildcard = Pattern (\tgt ctx (Multiset m) -> map (\x -> MCons (MAtom p m x) MNil) tgt)
+  cons p1 p2 = Pattern (\tgt ctx (Multiset m) -> map (\(x, xs) -> MCons (MAtom p1 m x) $ MCons (MAtom p2 (Multiset m) xs) MNil)
                                                      (matchAll tgt (List m) [[mc| join $hs (cons $x $ts) => (x, hs ++ ts) |]]))
-  join p1 p2 = Pattern (\tgt ctx m -> map (\(xs, ys) -> MCons (MAtom p1 xs m) $ MCons (MAtom p2 ys m) MNil)
+  join p1 p2 = Pattern (\tgt ctx m -> map (\(xs, ys) -> MCons (MAtom p1 m xs) $ MCons (MAtom p2 m ys) MNil)
                                           (concatMap (`unjoinM` tgt) [0..(length tgt)]))
 
 unjoinM :: Int -> [a] -> [([a], [a])]
@@ -136,5 +136,5 @@ instance (Matcher m, Eq a,  Ord a, ValuePat m a) => ValuePat (Set m) [a] where
 instance Matcher m => CollectionPat (Set m) [a] where
   nil = Pattern (\tgt ctx _ -> [MNil | null tgt])
   cons p1 p2 = Pattern (\tgt ctx (Set m) ->
-                  map (\x -> MCons (MAtom p1 x m) $ MCons (MAtom p2 tgt (Set m)) MNil) $ matchAll tgt (List m) [[mc| join Wildcard (cons $x Wildcard) => x |]])
+                  map (\x -> MCons (MAtom p1 m x) $ MCons (MAtom p2 (Set m) tgt) MNil) $ matchAll tgt (List m) [[mc| join Wildcard (cons $x Wildcard) => x |]])
   join p1 p2 = undefined

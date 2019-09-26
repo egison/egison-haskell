@@ -29,7 +29,7 @@ data MState vs where
 -- matching atom
 -- ctx: intermediate pattern-matching results
 -- vs: list of types bound to the pattern variables in the pattern.
-data MAtom ctx vs = forall a m. (Matcher m) => MAtom (Pattern a ctx m vs) a m
+data MAtom ctx vs = forall a m. (Matcher m) => MAtom (Pattern a ctx m vs) m a
 
 class Matcher a
 

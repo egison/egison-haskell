@@ -14,7 +14,7 @@ import           Unsafe.Coerce
 matchAll :: (Matcher m) => a -> m -> [MatchClause a m b] -> [b]
 matchAll tgt m [] = []
 matchAll tgt m ((MatchClause pat f):cs) =
-  let results = processMStatesAll [[MState HNil (MCons (MAtom pat tgt m) MNil)]] in
+  let results = processMStatesAll [[MState HNil (MCons (MAtom pat m tgt) MNil)]] in
   map f results ++ matchAll tgt m cs
 
 match :: (Matcher m) => a -> m -> [MatchClause a m b] -> b
@@ -23,7 +23,7 @@ match tgt m cs = head $ matchAll tgt m cs
 matchAllDFS :: (Matcher m) => a -> m -> [MatchClause a m b] -> [b]
 matchAllDFS tgt m [] = []
 matchAllDFS tgt m ((MatchClause pat f):cs) =
-  let results = processMStatesAllDFS [MState HNil (MCons (MAtom pat tgt m) MNil)] in
+  let results = processMStatesAllDFS [MState HNil (MCons (MAtom pat m tgt) MNil)] in
   map f results ++ matchAllDFS tgt m cs
 
 matchDFS :: (Matcher m) => a -> m -> [MatchClause a m b] -> b
@@ -58,7 +58,7 @@ processMStates []          = []
 processMStates (mstate:ms) = [processMState mstate, ms]
 
 processMState :: MState vs -> [MState vs]
-processMState (MState rs (MCons (MAtom pat tgt m) atoms)) =
+processMState (MState rs (MCons (MAtom pat m tgt) atoms)) =
   case pat of
     Pattern f ->
       let matomss = f tgt rs m in
@@ -66,11 +66,11 @@ processMState (MState rs (MCons (MAtom pat tgt m) atoms)) =
     Wildcard -> [MState rs atoms]
     PatVar _ -> [unsafeCoerce $ MState (happend rs (HCons tgt HNil)) atoms]
     AndPat p1 p2 ->
-      [unsafeCoerce $ MState rs (MCons (MAtom p1 tgt m) (MCons (MAtom p2 tgt m) $ unsafeCoerce atoms))]
+      [unsafeCoerce $ MState rs (MCons (MAtom p1 m tgt) (MCons (MAtom p2 m tgt) $ unsafeCoerce atoms))]
     OrPat p1 p2 ->
-      [MState rs (MCons (MAtom p1 tgt m) atoms), MState rs (MCons (MAtom p2 tgt m) atoms)]
+      [MState rs (MCons (MAtom p1 m tgt) atoms), MState rs (MCons (MAtom p2 m tgt) atoms)]
     NotPat p ->
-      [MState rs atoms | null $ processMStatesAll [[MState rs $ MCons (MAtom p tgt m) MNil]]]
+      [MState rs atoms | null $ processMStatesAll [[MState rs $ MCons (MAtom p m tgt) MNil]]]
     PredicatePat f -> [MState rs atoms | f rs tgt]
 processMState (MState rs (MJoin MNil matoms2)) = processMState (MState rs matoms2)
 processMState (MState rs (MJoin matoms1 matoms2)) =
