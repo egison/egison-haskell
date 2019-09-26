@@ -35,7 +35,7 @@ class ValuePat mt a where
   valuePat :: (Matcher mt, Eq a) => (HList ctx -> a) -> Pattern a ctx mt '[]
 
 class PairPat mt a where
-  pairPat :: (Matcher mt, a ~ (b1, b2), mt ~ (Pair m1 m2)) => Pattern b1 ctx m1 xs -> Pattern b2 (ctx :++: xs) m2 ys -> Pattern a ctx mt (xs :++: ys)
+  pair :: (Matcher mt, a ~ (b1, b2), mt ~ (Pair m1 m2)) => Pattern b1 ctx m1 xs -> Pattern b2 (ctx :++: xs) m2 ys -> Pattern a ctx mt (xs :++: ys)
 
 class CollectionPat mt a where
   nil  :: (Matcher mt, a ~ [b]) => Pattern a ctx mt '[]
@@ -69,7 +69,7 @@ data Pair a b = Pair a b
 instance (Matcher a, Matcher b) => Matcher (Pair a b)
 
 instance (Matcher m1, Matcher m2) => PairPat (Pair m1 m2) (a1, a2) where
-  pairPat p1 p2 = Pattern (\(t1, t2) _ (Pair m1 m2) -> [MCons (MAtom p1 t1 m1) $ MCons (MAtom p2 t2 m2) MNil])
+  pair p1 p2 = Pattern (\(t1, t2) _ (Pair m1 m2) -> [MCons (MAtom p1 t1 m1) $ MCons (MAtom p2 t2 m2) MNil])
 
 -- list matcher
 newtype List a = List a
@@ -97,8 +97,8 @@ instance (Matcher a) => Matcher (Multiset a)
 instance (Matcher m, Eq a,  ValuePat m a) => ValuePat (Multiset m) [a] where
   valuePat f = Pattern (\tgt ctx (Multiset m) ->
                             match (f ctx, tgt) (Pair (List m) (Multiset m)) $
-                              [[mc| pairPat nil nil => [MNil] |],
-                               [mc| pairPat (cons $x $xs) (cons #x #xs) => [MNil] |],
+                              [[mc| pair nil nil => [MNil] |],
+                               [mc| pair (cons $x $xs) (cons #x #xs) => [MNil] |],
                                [mc| Wildcard => [] |]])
 
 instance (Matcher m) => CollectionPat (Multiset m) [a] where
@@ -121,8 +121,8 @@ instance (Matcher a) => Matcher (Set a)
 instance (Matcher m, Eq a,  Ord a, ValuePat m a) => ValuePat (Set m) [a] where
   valuePat f = Pattern (\tgt ctx (Set m) ->
                   match (unique (f ctx), unique tgt) (Pair (List m) (Multiset m)) $
-                    [[mc| pairPat nil nil => [MNil] |],
-                     [mc| pairPat (cons $x $xs) (cons #x #xs) => [MNil] |],
+                    [[mc| pair nil nil => [MNil] |],
+                     [mc| pair (cons $x $xs) (cons #x #xs) => [MNil] |],
                      [mc| Wildcard => [] |]])
 
 instance Matcher m => CollectionPat (Set m) [a] where
