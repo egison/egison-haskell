@@ -47,20 +47,20 @@ A matcher is a special object that retains the pattern-matching algorithms for e
 `matchAll` takes a matcher as its second argument.
 We can change a way to interpret a pattern by changing a matcher.
 
-For example, by changing the matcher of the above `matchAll` from `list integer` to `multiset integer`, the evaluation result changes as follows:
+For example, by changing the matcher of the above `matchAll` from `List Integer` to `Multiset Integer`, the evaluation result changes as follows:
 
 ```
 matchAll [1,2,3] (Multiset Integer) [[mc| cons $x $xs => (x, xs)]]
 -- [(1,[2,3]),(2,[1,3]),(3,[1,2])]
 ```
 
-When the `multiset` matcher is used, the `cons` pattern decomposes a target list into an element and the rest elements.
+When the `Multiset` matcher is used, the `cons` pattern decomposes a target list into an element and the rest elements.
 
 The pattern-matching algorithms for each matcher can be defined by users.
-For example, the matchers such as `list` and `multiset` can be defined by users.
-The `something` matcher is the only built-in matcher.
+For example, the matchers such as `List` and `Multiset` can be defined by users.
+The `Something` matcher is the only built-in matcher.
 `something` can be used for pattern-matching arbitrary objects but can handle only pattern variables and wildcards.
-The definitions of `list` and `multiset` are found [here](https://github.com/egison/egison-haskell/blob/master/src/Control/Egison/Matcher.hs).
+The definitions of `List` and `Multiset` are found [here](https://github.com/egison/egison-haskell/blob/master/src/Control/Egison/Matcher.hs).
 We will write an explanation of this definition in future.
 
 ### Non-linear pattern
