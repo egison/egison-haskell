@@ -7,8 +7,11 @@
 
 import Control.Egison
 
-data Card = Card Suit Integer
-data Suit = Spade | Heart | Club | Diamond
+data Card = Card Suit Integer deriving (Show, Eq)
+data Suit = Spade | Heart | Club | Diamond deriving (Show, Eq)
+
+class CardPat mt a where
+  card :: Pattern 
 
 poker cs =
   match cs (multiset eql)
@@ -21,3 +24,9 @@ poker cs =
      [mc| _ => "Nothing"]]
 
 
+main :: IO ()
+main = do
+  let cs1 = [Card Spade 5, Card Spade 6, Card Spade 7, Card Spade 8, Card Spade 9]
+  let cs2 = [Card Spade 5, Card Spade 6, Card Spade 7, Card Spade 8, Card Diamond 11]
+  putStrLn $ poker cs1
+  putStrLn $ poke cs2

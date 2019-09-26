@@ -29,9 +29,9 @@ data MState vs where
 -- matching atom
 -- ctx: intermediate pattern-matching results
 -- vs: list of types bound to the pattern variables in the pattern.
-data MAtom ctx vs = forall a m. MAtom (Pattern a ctx (Matcher m) vs) a m
+data MAtom ctx vs = forall a m. (Matcher m) => MAtom (Pattern a ctx m vs) a m
 
-newtype Matcher a = Matcher a
+class Matcher a
 
 data HList xs where
   HNil :: HList '[]
@@ -43,7 +43,7 @@ data MList ctx vs where
   MCons :: MAtom ctx xs -> MList (ctx :++: xs) ys -> MList ctx (xs :++: ys)
   MJoin :: MList ctx xs -> MList (ctx :++: xs) ys -> MList ctx (xs :++: ys)
 
-data MatchClause a m b = forall vs. MatchClause (Pattern a '[] (Matcher m) vs) (HList vs -> b)
+data MatchClause a m b = forall vs. (Matcher m) => MatchClause (Pattern a '[] m vs) (HList vs -> b)
 
 happend :: HList as -> HList bs -> HList (as :++: bs)
 happend (HCons x xs) ys = case proof x xs ys of Refl -> HCons x $ happend xs ys
@@ -77,4 +77,4 @@ data Pattern a ctx mt vs where
   NotPat :: Pattern a ctx mt '[] -> Pattern a ctx mt '[]
   PredicatePat :: (HList ctx -> a -> Bool) -> Pattern a ctx mt '[]
   -- User-defined pattern; pattern is a function that takes a target, an intermediate pattern-matching result, and a matcher and returns a list of lists of matching atoms.
-  Pattern :: mt ~ Matcher m => (a -> HList ctx -> m -> [MList ctx vs]) -> Pattern a ctx mt vs
+  Pattern :: Matcher mt => (a -> HList ctx -> mt -> [MList ctx vs]) -> Pattern a ctx mt vs

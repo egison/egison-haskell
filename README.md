@@ -12,21 +12,21 @@ The design of the pattern-matching facility is originally proposed in [this pape
 This library provides two syntax constructs, `matchAll`, `match`, `matchAllDFS`, and `matchDFS` for advanced pattern matching for non-free data types.
 
 ```
-e = hs-expr                 -- arbitrary Haskell expression
-  | matchAll e e [C, ...]   -- match-all expression
-  | match e e [C, ...]      -- match expression
+e = hs-expr                    -- arbitrary Haskell expression
+  | matchAll e e [C, ...]      -- match-all expression
+  | match e e [C, ...]         -- match expression
   | matchAllDFS e e [C, ...]   -- match-all expression
   | matchDFS e e [C, ...]      -- match expression
-  | something               -- Something built-in matcher
+  | Something                  -- Something built-in matcher
 
-C = [mc| p => e]            -- match clause
+C = [mc| p => e]               -- match clause
 
-p = _                       -- wildcard
-  | $x                      -- pattern variable
-  | #e                      -- value pattern
-  | (& p ...)               -- and-pattern
-  | (| p ...)               -- or-pattern
-  | (not p)                 -- not-pattern
+p = _                          -- wildcard
+  | $x                         -- pattern variable
+  | #e                         -- value pattern
+  | (& p ...)                  -- and-pattern
+  | (| p ...)                  -- or-pattern
+  | (not p)                    -- not-pattern
 ```
 
 ## Usage
@@ -38,7 +38,7 @@ The expression below pattern-matches a target `[1,2,3]` as a list of integers wi
 This expression returns a list of a single element because there is only one decomposition.
 
 ```
-matchAll [1,2,3] (list integer) [[mc| cons $x $xs => (x, xs)]]
+matchAll [1,2,3] (List Integer) [[mc| cons $x $xs => (x, xs)]]
 -- [(1,[2,3])]
 ```
 
@@ -50,7 +50,7 @@ We can change a way to interpret a pattern by changing a matcher.
 For example, by changing the matcher of the above `matchAll` from `list integer` to `multiset integer`, the evaluation result changes as follows:
 
 ```
-matchAll [1,2,3] (multiset integer) [[mc| cons $x $xs => (x, xs)]]
+matchAll [1,2,3] (Multiset Integer) [[mc| cons $x $xs => (x, xs)]]
 -- [(1,[2,3]),(2,[1,3]),(3,[1,2])]
 ```
 
@@ -71,7 +71,7 @@ For example, the program below pattern-matches a list `[1,2,5,9,4]` as a multise
 A non-linear pattern is effectively used for expressing the pattern.
 
 ```
-matchAll [1,2,5,9,4] (multiset integer) [[mc| cons $x (cons #(x+1) _) => x]]
+matchAll [1,2,5,9,4] (Multiset Integer) [[mc| cons $x (cons #(x+1) _) => x]]
 -- [1,4]
 ```
 
@@ -90,7 +90,7 @@ preparing...
 We can extract all twin primes from the list of prime numbers by pattern matching:
 
 ```
-take 10 (matchAll primes (list integer)
+take 10 (matchAll primes (List Integer)
            [[mc| join _ (cons $p (cons #(p+2) _)) => (p, p+2) |]])
 -- [(3,5),(5,7),(11,13),(17,19),(29,31),(41,43),(59,61),(71,73),(101,103),(107,109)]
 ```
@@ -98,7 +98,7 @@ take 10 (matchAll primes (list integer)
 It is also possible to enumerate all the pairs of prime numbers whose form is (p, p+6):
 
 ```
-take 10 (matchAll primes (list integer)
+take 10 (matchAll primes (List Integer)
            [[mc| join _ (cons $p (join _ (cons #(p+6) _))) => (p, p+6) |]])
 -- [(5,11),(7,13),(11,17),(13,19),(17,23),(23,29),(31,37),(37,43),(41,47),(47,53)]
 ```
@@ -124,7 +124,7 @@ import Data.Numbers.Primes
 main :: IO ()
 main = do
   let n = 100
-  let ans = take n (matchAll primes (list integer)
+  let ans = take n (matchAll primes (List Integer)
                      [[mc| join _ (cons $p (cons #(p+2) _)) => (p, p+2) |]])
   putStrLn $ show ans
 $ stack ghc -- benchmark/prime-pairs-2.hs

@@ -11,22 +11,22 @@ module Control.Egison.Match (
 import           Control.Egison.Core
 import           Unsafe.Coerce
 
-matchAll :: a -> Matcher m -> [MatchClause a m b] -> [b]
-matchAll tgt (Matcher m) [] = []
-matchAll tgt (Matcher m) ((MatchClause pat f):cs) =
+matchAll :: (Matcher m) => a -> m -> [MatchClause a m b] -> [b]
+matchAll tgt m [] = []
+matchAll tgt m ((MatchClause pat f):cs) =
   let results = processMStatesAll [[MState HNil (MCons (MAtom pat tgt m) MNil)]] in
-  map f results ++ matchAll tgt (Matcher m) cs
+  map f results ++ matchAll tgt m cs
 
-match :: a -> Matcher m -> [MatchClause a m b] -> b
+match :: (Matcher m) => a -> m -> [MatchClause a m b] -> b
 match tgt m cs = head $ matchAll tgt m cs
 
-matchAllDFS :: a -> Matcher m -> [MatchClause a m b] -> [b]
-matchAllDFS tgt (Matcher m) [] = []
-matchAllDFS tgt (Matcher m) ((MatchClause pat f):cs) =
+matchAllDFS :: (Matcher m) => a -> m -> [MatchClause a m b] -> [b]
+matchAllDFS tgt m [] = []
+matchAllDFS tgt m ((MatchClause pat f):cs) =
   let results = processMStatesAllDFS [MState HNil (MCons (MAtom pat tgt m) MNil)] in
-  map f results ++ matchAllDFS tgt (Matcher m) cs
+  map f results ++ matchAllDFS tgt m cs
 
-matchDFS :: a -> Matcher m -> [MatchClause a m b] -> b
+matchDFS :: (Matcher m) => a -> m -> [MatchClause a m b] -> b
 matchDFS tgt m cs = head $ matchAllDFS tgt m cs
 
 --

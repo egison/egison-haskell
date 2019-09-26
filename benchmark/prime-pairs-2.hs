@@ -7,6 +7,6 @@ import Data.Numbers.Primes
 main :: IO ()
 main = do
   let n = 100
-  let ans = take n (matchAll primes (list integer)
+  let ans = take n (matchAll primes (List Integer)
                      [[mc| join _ (cons $p (cons #(p+2) _)) => (p, p+2) |]])
   putStrLn $ show ans
