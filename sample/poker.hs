@@ -68,12 +68,12 @@ poker cs =
 
 main :: IO ()
 main = do
-  putStrLn $ poker [Card Spade 5, Card Spade 6, Card Spade 7, Card Spade 8, Card Spade 9]
-  putStrLn $ poker [Card Spade 5, Card Diamond 5, Card Spade 7, Card Club 5, Card Heart 5]
-  putStrLn $ poker [Card Spade 5, Card Diamond 5, Card Spade 7, Card Club 5, Card Heart 7]
-  putStrLn $ poker [Card Spade 5, Card Spade 6, Card Spade 7, Card Spade 13, Card Spade 9]
-  putStrLn $ poker [Card Spade 5, Card Club 6, Card Spade 7, Card Spade 8, Card Spade 9]
-  putStrLn $ poker [Card Spade 5, Card Diamond 5, Card Spade 7, Card Club 5, Card Heart 8]
-  putStrLn $ poker [Card Spade 5, Card Diamond 10, Card Spade 7, Card Club 5, Card Heart 10]
-  putStrLn $ poker [Card Spade 5, Card Diamond 10, Card Spade 7, Card Club 5, Card Heart 8]
-  putStrLn $ poker [Card Spade 5, Card Spade 6, Card Spade 7, Card Spade 8, Card Diamond 11]
+  putStrLn $ poker [Card Spade 5, Card Spade 6, Card Spade 7, Card Spade 8, Card Spade 9]    -- "Straight flush
+  putStrLn $ poker [Card Spade 5, Card Diamond 5, Card Spade 7, Card Club 5, Card Heart 5]   -- "Four of a kind"
+  putStrLn $ poker [Card Spade 5, Card Diamond 5, Card Spade 7, Card Club 5, Card Heart 7]   -- "Full house"
+  putStrLn $ poker [Card Spade 5, Card Spade 6, Card Spade 7, Card Spade 13, Card Spade 9]   -- "Flush"
+  putStrLn $ poker [Card Spade 5, Card Club 6, Card Spade 7, Card Spade 8, Card Spade 9]     -- "Straight"
+  putStrLn $ poker [Card Spade 5, Card Diamond 5, Card Spade 7, Card Club 5, Card Heart 8]   -- "Three of a kind"
+  putStrLn $ poker [Card Spade 5, Card Diamond 10, Card Spade 7, Card Club 5, Card Heart 10] -- "Two pair"
+  putStrLn $ poker [Card Spade 5, Card Diamond 10, Card Spade 7, Card Club 5, Card Heart 8]  -- "One pair"
+  putStrLn $ poker [Card Spade 5, Card Spade 6, Card Spade 7, Card Spade 8, Card Diamond 11] -- "Nothing"
