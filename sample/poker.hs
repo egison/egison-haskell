@@ -68,21 +68,12 @@ poker cs =
 
 main :: IO ()
 main = do
-  let cs1 = [Card Spade 5, Card Spade 6, Card Spade 7, Card Spade 8, Card Spade 9]
-  let cs2 = [Card Spade 5, Card Diamond 5, Card Spade 7, Card Club 5, Card Heart 5]
-  let cs3 = [Card Spade 5, Card Diamond 5, Card Spade 7, Card Club 5, Card Heart 7]
-  let cs4 = [Card Spade 5, Card Spade 6, Card Spade 7, Card Spade 13, Card Spade 9]
-  let cs5 = [Card Spade 5, Card Club 6, Card Spade 7, Card Spade 8, Card Spade 9]
-  let cs6 = [Card Spade 5, Card Diamond 5, Card Spade 7, Card Club 5, Card Heart 8]
-  let cs7 = [Card Spade 5, Card Diamond 10, Card Spade 7, Card Club 5, Card Heart 10]
-  let cs8 = [Card Spade 5, Card Diamond 10, Card Spade 7, Card Club 5, Card Heart 8]
-  let cs9 = [Card Spade 5, Card Spade 6, Card Spade 7, Card Spade 8, Card Diamond 11]
-  putStrLn $ poker cs1
-  putStrLn $ poker cs2
-  putStrLn $ poker cs3
-  putStrLn $ poker cs4
-  putStrLn $ poker cs5
-  putStrLn $ poker cs6
-  putStrLn $ poker cs7
-  putStrLn $ poker cs8
-  putStrLn $ poker cs9
+  putStrLn $ poker [Card Spade 5, Card Spade 6, Card Spade 7, Card Spade 8, Card Spade 9]
+  putStrLn $ poker [Card Spade 5, Card Diamond 5, Card Spade 7, Card Club 5, Card Heart 5]
+  putStrLn $ poker [Card Spade 5, Card Diamond 5, Card Spade 7, Card Club 5, Card Heart 7]
+  putStrLn $ poker [Card Spade 5, Card Spade 6, Card Spade 7, Card Spade 13, Card Spade 9]
+  putStrLn $ poker [Card Spade 5, Card Club 6, Card Spade 7, Card Spade 8, Card Spade 9]
+  putStrLn $ poker [Card Spade 5, Card Diamond 5, Card Spade 7, Card Club 5, Card Heart 8]
+  putStrLn $ poker [Card Spade 5, Card Diamond 10, Card Spade 7, Card Club 5, Card Heart 10]
+  putStrLn $ poker [Card Spade 5, Card Diamond 10, Card Spade 7, Card Club 5, Card Heart 8]
+  putStrLn $ poker [Card Spade 5, Card Spade 6, Card Spade 7, Card Spade 8, Card Diamond 11]

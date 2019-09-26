@@ -105,8 +105,59 @@ take 10 (matchAll primes (List Integer)
 
 ### Poker hand
 
-preparing...
-
+```
+poker cs =
+  match cs (Multiset CardM)
+    [[mc| cons (card $s $n)
+           (cons (card #s #(n-1))
+            (cons (card #s #(n-2))
+             (cons (card #s #(n-3))
+              (cons (card #s #(n-4))
+               _)))) => "Straight flush" |],
+     [mc| cons (card _ $n)
+           (cons (card _ #n)
+            (cons (card _ #n)
+             (cons (card _ #n)
+              (cons _
+               _)))) => "Four of a kind" |],
+     [mc| cons (card _ $m)
+           (cons (card _ #m)
+            (cons (card _ #m)
+             (cons (card _ $n)
+              (cons (card _ #n)
+                _)))) => "Full house" |],
+     [mc| cons (card $s _)
+           (cons (card #s _)
+            (cons (card #s _)
+             (cons (card #s _)
+              (cons (card #s _)
+               _)))) => "Flush" |],
+     [mc| cons (card _ $n)
+           (cons (card _ #(n-1))
+            (cons (card _ #(n-2))
+             (cons (card _ #(n-3))
+              (cons (card _ #(n-4))
+               _)))) => "Straight" |],
+     [mc| cons (card _ $n)
+           (cons (card _ #n)
+            (cons (card _ #n)
+             (cons _
+              (cons _
+               _)))) => "Three of a kind" |],
+     [mc| cons (card _ $m)
+           (cons (card _ #m)
+            (cons (card _ $n)
+             (cons (card _ #n)
+              (cons _
+                _)))) => "Two pair" |],
+     [mc| cons (card _ $n)
+           (cons (card _ #n)
+            (cons _
+             (cons _
+              (cons _
+               _)))) => "One pair" |],
+     [mc| _ => "Nothing" |]]
+```
 
 ## Benchmark
 
