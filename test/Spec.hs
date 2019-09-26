@@ -30,10 +30,10 @@ spec = do
       matchAll [1,2,3] (Multiset Integer) [[mc| cons $x $xs => (x, xs) |]]
       `shouldBe` [(1,[2,3]),(2,[1,3]),(3,[1,2])]
 
-    it "join pattern for multiset matcher" $ length (
-      matchAll [1..5] (Multiset Integer)
+    it "join pattern for list matcher" $ length (
+      matchAll [1..5] (List Integer)
         [[mc| join $xs $ys => (xs, ys) |]])
-      `shouldBe` 32
+      `shouldBe` 6
 
     it "value pattern for list matcher (1)" $
       match [1,2,3] (List Integer)
