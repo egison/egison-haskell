@@ -61,7 +61,7 @@ processMState :: MState vs -> [MState vs]
 processMState (MState rs (MCons (MAtom pat m tgt) atoms)) =
   case pat of
     Pattern f ->
-      let matomss = f tgt rs m in
+      let matomss = f rs m tgt in
       map (\newAtoms -> MState rs (MJoin newAtoms atoms)) matomss
     Wildcard -> [MState rs atoms]
     PatVar _ -> [unsafeCoerce $ MState (happend rs (HCons tgt HNil)) atoms]
