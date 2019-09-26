@@ -83,8 +83,12 @@ class CollectionPat mt a where
 newtype List a = List a
 instance (Matcher a) => Matcher (List a)
 
-instance (Matcher m, Eq a) => ValuePat (List m) [a] where -- todo: Fix `Eq a` to `ValuePat m a`
-  valuePat f = Pattern (\tgt ctx _ -> [MNil | f ctx == tgt])
+instance (Matcher m, Eq a, ValuePat m a) => ValuePat (List m) [a] where
+  valuePat f = Pattern (\tgt ctx (List m) ->
+                            match (f ctx, tgt) (Pair (List m) (List m)) $
+                              [[mc| pair nil nil => [MNil] |],
+                               [mc| pair (cons $x $xs) (cons #x #xs) => [MNil] |],
+                               [mc| Wildcard => [] |]])
 
 instance Matcher m => CollectionPat (List m) [a] where
   nil = Pattern (\t ctx _ -> [MNil | null t])
@@ -136,5 +140,6 @@ instance (Matcher m, Eq a,  Ord a, ValuePat m a) => ValuePat (Set m) [a] where
 instance Matcher m => CollectionPat (Set m) [a] where
   nil = Pattern (\tgt ctx _ -> [MNil | null tgt])
   cons p1 p2 = Pattern (\tgt ctx (Set m) ->
-                  map (\x -> MCons (MAtom p1 m x) $ MCons (MAtom p2 (Set m) tgt) MNil) $ matchAll tgt (List m) [[mc| join Wildcard (cons $x Wildcard) => x |]])
+                  map (\x -> MCons (MAtom p1 m x) $ MCons (MAtom p2 (Set m) tgt) MNil)
+                      (matchAll tgt (List m) [[mc| join Wildcard (cons $x Wildcard) => x |]]))
   join p1 p2 = undefined

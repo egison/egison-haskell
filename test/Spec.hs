@@ -35,6 +35,18 @@ spec = do
         [[mc| join $xs $ys => (xs, ys) |]])
       `shouldBe` 32
 
+    it "value pattern for list matcher (1)" $
+      match [1,2,3] (List Integer)
+        [[mc| #[1,2,3] => "Matched" |],
+         [mc| _ => "Not matched" |]]
+      `shouldBe` "Matched"
+
+    it "value pattern for list matcher (2)" $
+      match [1,2,3] (List Integer)
+        [[mc| #[2,1,3] => "Matched" |],
+         [mc| _ => "Not matched" |]]
+      `shouldBe` "Not matched"
+
     it "value pattern for multiset matcher" $
       match [1,2,3] (Multiset Integer)
         [[mc| #[2,1,3] => "Matched" |],
