@@ -19,7 +19,7 @@ e = hs-expr                    -- arbitrary Haskell expression
   | matchDFS e e [C, ...]      -- match expression
   | Something                  -- Something built-in matcher
 
-C = [mc| p => e]               -- match clause
+C = [mc| p => e |]             -- match clause
 
 p = _                          -- wildcard
   | $x                         -- pattern variable
