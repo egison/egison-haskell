@@ -38,11 +38,11 @@ data Pattern a m ctx vs where
   NotPat :: Pattern a m ctx '[] -> Pattern a m ctx '[]
   PredicatePat :: (HList ctx -> a -> Bool) -> Pattern a m ctx '[]
   -- User-defined pattern; pattern is a function that takes a target, an intermediate pattern-matching result, and a matcher and returns a list of lists of matching atoms.
-  Pattern :: Matcher m => (HList ctx -> m -> a -> [MList ctx vs]) -> Pattern a m ctx vs
+  Pattern :: Matcher m a => (HList ctx -> m -> a -> [MList ctx vs]) -> Pattern a m ctx vs
 
-class Matcher a
+class Matcher m a
 
-data MatchClause a m b = forall vs. (Matcher m) => MatchClause (Pattern a m '[] vs) (HList vs -> b)
+data MatchClause a m b = forall vs. (Matcher m a) => MatchClause (Pattern a m '[] vs) (HList vs -> b)
 
 ---
 --- Matching state
@@ -54,7 +54,7 @@ data MState vs where
 -- matching atom
 -- ctx: intermediate pattern-matching results
 -- vs: list of types bound to the pattern variables in the pattern.
-data MAtom ctx vs = forall a m. (Matcher m) => MAtom (Pattern a m ctx vs) m a
+data MAtom ctx vs = forall a m. (Matcher m a) => MAtom (Pattern a m ctx vs) m a
 
 -- stack of matching atoms
 data MList ctx vs where

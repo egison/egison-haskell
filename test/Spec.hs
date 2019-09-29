@@ -53,6 +53,11 @@ spec = do
          [mc| _ => "Not matched" |]]
       `shouldBe` "Matched"
 
+--    it "test" $
+--      match 1 (List Integer)
+--        [[mc| $x => "Matched" |]]
+--      `shouldBe` "Matched"
+
   describe "match-all with infinitely many results" $ do
     it "Check the order of pattern-matching results" $
       take 10 (matchAll [1..] (Multiset Integer)

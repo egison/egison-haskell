@@ -11,22 +11,22 @@ module Control.Egison.Match (
 import           Control.Egison.Core
 import           Unsafe.Coerce
 
-matchAll :: (Matcher m) => a -> m -> [MatchClause a m b] -> [b]
+matchAll :: (Matcher m a) => a -> m -> [MatchClause a m b] -> [b]
 matchAll tgt m [] = []
 matchAll tgt m ((MatchClause pat f):cs) =
   let results = processMStatesAll [[MState HNil (MCons (MAtom pat m tgt) MNil)]] in
   map f results ++ matchAll tgt m cs
 
-match :: (Matcher m) => a -> m -> [MatchClause a m b] -> b
+match :: (Matcher m a) => a -> m -> [MatchClause a m b] -> b
 match tgt m cs = head $ matchAll tgt m cs
 
-matchAllDFS :: (Matcher m) => a -> m -> [MatchClause a m b] -> [b]
+matchAllDFS :: (Matcher m a) => a -> m -> [MatchClause a m b] -> [b]
 matchAllDFS tgt m [] = []
 matchAllDFS tgt m ((MatchClause pat f):cs) =
   let results = processMStatesAllDFS [MState HNil (MCons (MAtom pat m tgt) MNil)] in
   map f results ++ matchAllDFS tgt m cs
 
-matchDFS :: (Matcher m) => a -> m -> [MatchClause a m b] -> b
+matchDFS :: (Matcher m a) => a -> m -> [MatchClause a m b] -> b
 matchDFS tgt m cs = head $ matchAllDFS tgt m cs
 
 --
@@ -77,4 +77,3 @@ processMState (MState rs (MJoin matoms1 matoms2)) =
   let mstates = processMState (MState rs matoms1) in
   map (\(MState rs' ms) -> unsafeCoerce $ MState rs' $ MJoin ms matoms2) mstates
 processMState (MState rs MNil) = [MState rs MNil] -- TODO: shold not reach here but reaches here.
-
