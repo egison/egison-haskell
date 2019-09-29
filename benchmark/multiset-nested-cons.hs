@@ -9,4 +9,4 @@ main = do
 --  let ans = matchAll [1..n] (Multiset Something)
   let ans = matchAllDFS [1..n] (Multiset Something)
               [[mc| (cons $x (cons $y Wildcard)) => (x, y) |]]
-  putStrLn $ show ans
+  putStrLn $ show $ length ans
