@@ -19,7 +19,7 @@ e = hs-expr                    -- arbitrary Haskell expression
   | matchDFS e e [C, ...]      -- match expression
   | Something                  -- Something built-in matcher
 
-C = [mc| p => e]               -- match clause
+C = [mc| p => e |]             -- match clause
 
 p = _                          -- wildcard
   | $x                         -- pattern variable
@@ -38,7 +38,7 @@ The expression below pattern-matches a target `[1,2,3]` as a list of integers wi
 This expression returns a list of a single element because there is only one decomposition.
 
 ```
-matchAll [1,2,3] (List Integer) [[mc| cons $x $xs => (x, xs)]]
+matchAll [1,2,3] (List Integer) [[mc| cons $x $xs => (x, xs)|]]
 -- [(1,[2,3])]
 ```
 
@@ -50,7 +50,7 @@ We can change a way to interpret a pattern by changing a matcher.
 For example, by changing the matcher of the above `matchAll` from `List Integer` to `Multiset Integer`, the evaluation result changes as follows:
 
 ```
-matchAll [1,2,3] (Multiset Integer) [[mc| cons $x $xs => (x, xs)]]
+matchAll [1,2,3] (Multiset Integer) [[mc| cons $x $xs => (x, xs)|]]
 -- [(1,[2,3]),(2,[1,3]),(3,[1,2])]
 ```
 
@@ -71,7 +71,7 @@ For example, the program below pattern-matches a list `[1,2,5,9,4]` as a multise
 A non-linear pattern is effectively used for expressing the pattern.
 
 ```
-matchAll [1,2,5,9,4] (Multiset Integer) [[mc| cons $x (cons #(x+1) _) => x]]
+matchAll [1,2,5,9,4] (Multiset Integer) [[mc| cons $x (cons #(x+1) _) => x|]]
 -- [1,4]
 ```
 
