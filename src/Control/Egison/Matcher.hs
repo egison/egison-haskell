@@ -74,9 +74,9 @@ instance (Matcher m1 a1, Matcher m2 a2) => PairPat (Pair m1 m2) (a1, a2) where
 ---
 
 class CollectionPat m a where
-  nil  :: (Matcher m a, a ~ [a']) => Pattern a m ctx '[]
+  nil  :: (Matcher m a) => Pattern a m ctx '[]
   cons :: (Matcher m a, a ~ [a'], m ~ (f m')) => Pattern a' m' ctx xs -> Pattern a m (ctx :++: xs) ys -> Pattern a m ctx (xs :++: ys)
-  join :: (Matcher m a, a ~ [a']) => Pattern a m ctx xs -> Pattern a m (ctx :++: xs) ys -> Pattern a m ctx (xs :++: ys)
+  join :: (Matcher m a) => Pattern a m ctx xs -> Pattern a m (ctx :++: xs) ys -> Pattern a m ctx (xs :++: ys)
 
 -- List matcher
 newtype List m = List m
