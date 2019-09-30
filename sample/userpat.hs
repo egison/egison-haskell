@@ -7,36 +7,34 @@
 
 import           Control.Egison
 
-data Tree a = Leaf | Node (Tree a) a (Tree a)
+data Tree a = Leaf | Node a (Tree a) (Tree a)
 
-data TreeM a = TreeM a
+data TreeM m = TreeM m
+instance (Matcher m a) => Matcher (TreeM m) (Tree a)
 
-tree :: Matcher a -> Matcher (TreeM a)
-tree (Matcher m) = Matcher (TreeM m)
+class TreePat m a where
+  leafPat :: Pattern a m ctx '[]
+  nodePat :: a ~ (Tree a') => m ~ (f m') => Pattern a' m' ctx xs -> Pattern a m (ctx :++: xs) ys -> Pattern a m ((ctx :++: xs) :++: ys) zs -> Pattern a m ctx (xs :++: ys :++: zs)
 
-class TreePat mt a where
-  leafPat :: Pattern a ctx mt '[]
-  nodePat :: a ~ (Tree b) => mt ~ Matcher (f m) => Pattern a ctx mt xs -> Pattern b (ctx :++: xs) (Matcher m) ys -> Pattern a ((ctx :++: xs) :++: ys) mt zs -> Pattern a ctx mt (xs :++: ys :++: zs)
-
-instance TreePat (Matcher (TreeM m)) (Tree a) where
+instance (Matcher m a) => TreePat (TreeM m) (Tree a) where
   leafPat =
-    Pattern (\t ctx _ ->
+    Pattern (\ctx _ t ->
       case t of
         Leaf -> [MNil]
         _    -> [])
   nodePat p1 p2 p3 =
-    Pattern (\t ctx (TreeM m) ->
+    Pattern (\ctx (TreeM m) t ->
       case t of
-        Node t1 v t2 -> [MCons (MAtom p1 t1 (TreeM m)) $ MCons (MAtom p2 v m) $ MCons (MAtom p3 t2 (TreeM m)) MNil]
+        Node v t1 t2 -> [MCons (MAtom p1 m v) $ MCons (MAtom p2 (TreeM m) t1) $ MCons (MAtom p3 (TreeM m) t2) MNil]
         _ -> [])
 
 main :: IO ()
 main = do
-  let t1 = Node (Node Leaf 1 Leaf) 3 (Node Leaf 2 Leaf)
+  let t1 = Node 3 (Node 1 Leaf Leaf) (Node 2 Leaf Leaf)
   let t2 = Leaf
   putStrLn $ show $ f t1 -- [3]
   putStrLn $ show $ f t2 -- [0]
  where
-   f t = matchAll t (tree integer)
-           [[mc| nodePat _ $x _ => x |],
+   f t = matchAll t (TreeM Eql)
+           [[mc| nodePat $x _ _ => x |],
             [mc| leafPat => 0 |]]
