@@ -6,6 +6,7 @@
 {-# LANGUAGE TypeOperators         #-}
 
 import           Control.Egison
+import           Unsafe.Coerce
 
 data Tree a = Leaf | Node a (Tree a) (Tree a)
 
@@ -23,7 +24,7 @@ instance (Matcher m a) => TreePat (TreeM m) (Tree a) where
         Leaf -> [MNil]
         _    -> [])
   nodePat p1 p2 p3 =
-    Pattern (\ctx (TreeM m) t ->
+    unsafeCoerce $ Pattern (\ctx (TreeM m) t -> -- TODO: remove this unsafeCoerce
       case t of
         Node v t1 t2 -> [MCons (MAtom p1 m v) $ MCons (MAtom p2 (TreeM m) t1) $ MCons (MAtom p3 (TreeM m) t2) MNil]
         _ -> [])

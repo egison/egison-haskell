@@ -21,6 +21,7 @@ module Control.Egison.Core (
   ) where
 
 import           Data.Maybe
+import           Data.Type.Equality
 
 ---
 --- Pattern
@@ -70,19 +71,16 @@ data HList xs where
   HNil :: HList '[]
   HCons :: a -> HList as -> HList (a ': as)
 
-happend :: HList as -> HList bs -> HList (as :++: bs)
-happend (HCons x xs) ys = case proof x xs ys of Refl -> HCons x $ happend xs ys
-happend HNil ys         = ys
-
 type family as :++: bs :: [*] where
   bs :++: '[] = bs
   '[] :++: bs = bs
   (a ': as) :++: bs = a ': (as :++: bs)
 
-data (a :: [*]) :~: (b :: [*]) where
-  Refl :: a :~: a
+happend :: HList as -> HList bs -> HList (as :++: bs)
+happend HNil ys         = ys
+happend xs@(HCons x xs') ys = case proof x xs' ys of
+                                Refl -> HCons x $ happend xs' ys
 
 proof :: a -> HList as -> HList bs -> ((a ': as) :++: bs) :~: (a ': (as :++: bs))
 proof _ _ HNil = Refl
 proof x xs (HCons y ys) = Refl
-
