@@ -68,7 +68,10 @@ data MList ctx vs where
 
 mappend :: MList ctx xs -> MList (ctx :++: xs) ys -> MList ctx (xs :++: ys)
 mappend MNil atoms = atoms
-mappend (MCons atom atoms1) atoms2 = unsafeCoerce $ MCons atom (mappend atoms1 $ unsafeCoerce atoms2)
+mappend (MCons atom atoms1) atoms2 =
+  case mconsAssocProof atom atoms1 of
+    Refl -> case mappendAssocProof atom atoms1 atoms2 of
+      Refl -> MCons atom (mappend atoms1 atoms2)
 
 ---
 --- Heterogeneous list
@@ -96,3 +99,9 @@ appendAssoc :: HList as -> HList bs -> HList cs -> ((as :++: bs) :++: cs) :~: (a
 appendAssoc HNil _ _ = Refl
 appendAssoc (HCons _ xs) ys zs = case appendAssoc xs ys zs of
                                    Refl -> unsafeCoerce Refl -- Todo: Write proof.
+
+mconsAssocProof :: MAtom ctx vs -> MList (ctx :++: vs) vs' -> (ctx :++: (vs :++: vs')) :~: ((ctx :++: vs) :++: vs')
+mconsAssocProof _ _ = unsafeCoerce Refl -- Todo: Write proof.
+
+mappendAssocProof :: MAtom ctx xs -> MList (ctx :++: xs) ys ->  MList (ctx :++: xs :++: ys) zs -> (xs :++: (ys :++: zs)) :~: ((xs :++: ys) :++: zs)
+mappendAssocProof _ _ = unsafeCoerce Refl -- Todo: Write proof.
