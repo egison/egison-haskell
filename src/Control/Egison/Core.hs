@@ -84,9 +84,8 @@ twoMAtoms atom1 atom2 = MCons atom1 (MCons atom2 MNil)
 
 threeMAtoms :: MAtom ctx xs -> MAtom (ctx :++: xs) ys -> MAtom (ctx :++: xs :++: ys) zs -> MList ctx (xs :++: ys :++: zs)
 threeMAtoms atom1 atom2 atom3 =
-   unsafeCoerce $ MCons atom1 (MCons atom2 (MCons atom3 MNil))
---  case mappendAssocProof atom1 (MCons atom2 (MCons atom3 MNil)) of
---    Refl -> MCons atom1 (MCons atom2 (MCons atom3 MNil))
+  case threeMConsAssocProof atom1 atom2 atom3 of
+    Refl -> MCons atom1 (MCons atom2 (MCons atom3 MNil))
 
 ---
 --- Heterogeneous list
@@ -115,3 +114,6 @@ mconsAssocProof _ _ = unsafeCoerce Refl -- Todo: Write proof.
 
 mappendAssocProof :: MAtom ctx xs -> MList (ctx :++: xs) ys ->  MList (ctx :++: xs :++: ys) zs -> (xs :++: (ys :++: zs)) :~: ((xs :++: ys) :++: zs)
 mappendAssocProof _ _ _ = unsafeCoerce Refl -- Todo: Write proof.
+
+threeMConsAssocProof :: MAtom ctx xs -> MAtom (ctx :++: xs) ys -> MAtom (ctx :++: xs :++: ys) zs -> (xs :++: ys :++: zs) :~: (xs :++: (ys :++: zs))
+threeMConsAssocProof _ _ _ = unsafeCoerce Refl -- Todo: Write proof.

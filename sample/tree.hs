@@ -19,7 +19,7 @@ class TreePat m a where
           => Pattern a' m' ctx xs
           -> Pattern a m (ctx :++: xs) ys
           -> Pattern a m (ctx :++: xs :++: ys) zs
-          -> Pattern a m ctx (xs :++: ys :++: zs)  -- TODO: we want to remove the parenthesis for (ys :++: zs).
+          -> Pattern a m ctx (xs :++: ys :++: zs)
 
 instance (Matcher m a) => TreePat (TreeM m) (Tree a) where
   leafPat =
