@@ -67,10 +67,12 @@ processMState (MState rs (MCons (MAtom pat m tgt) atoms)) =
       let matomss = f rs m tgt in
       map (\newAtoms -> MState rs (mappend newAtoms atoms)) matomss
     Wildcard -> [MState rs atoms]
-    PatVar _ -> case proof rs (HCons tgt HNil) atoms of
+    PatVar _ -> case patVarProof rs (HCons tgt HNil) atoms of
                   Refl -> [MState (happend rs (HCons tgt HNil)) atoms]
     AndPat p1 p2 ->
-      [unsafeCoerce $ MState rs (MCons (MAtom p1 m tgt) (MCons (MAtom p2 m tgt) $ unsafeCoerce atoms))]
+      case (assocProof (MAtom p1 m tgt) (MAtom p2 m tgt)) of
+        Refl -> case (andPatProof (MAtom p1 m tgt) (MAtom p2 m tgt) atoms) of
+          Refl -> [MState rs (MCons (MAtom p1 m tgt) (MCons (MAtom p2 m tgt) $ atoms))]
     OrPat p1 p2 ->
       [MState rs (MCons (MAtom p1 m tgt) atoms), MState rs (MCons (MAtom p2 m tgt) atoms)]
     NotPat p ->
@@ -78,6 +80,12 @@ processMState (MState rs (MCons (MAtom pat m tgt) atoms)) =
     PredicatePat f -> [MState rs atoms | f rs tgt]
 processMState (MState rs MNil) = [MState rs MNil] -- TODO: shold not reach here but reaches here.
 
-proof :: HList xs -> HList '[a] -> MList (xs :++: '[a]) ys -> ((xs :++: '[a]) :++: ys) :~: (xs :++: ('[a] :++: ys))
-proof HNil _ _ = Refl
-proof (HCons _ xs) ys zs = unsafeCoerce Refl -- Todo: Write proof.
+patVarProof :: HList xs -> HList '[a] -> MList (xs :++: '[a]) ys -> ((xs :++: '[a]) :++: ys) :~: (xs :++: ('[a] :++: ys))
+patVarProof HNil _ _ = Refl
+patVarProof (HCons _ xs) ys zs = unsafeCoerce Refl -- Todo: Write proof.
+
+andPatProof :: MAtom ctx vs -> MAtom (ctx :++: vs) vs' -> MList (ctx :++: vs :++: vs') ys -> (ctx :++: ((vs :++: vs') :++: ys)) :~: (ctx :++: (vs :++: (vs' :++: ys)))
+andPatProof _ _ _ = unsafeCoerce Refl -- Todo: Write proof.
+
+assocProof :: MAtom ctx vs -> MAtom (ctx :++: vs) vs' -> (ctx :++: (vs :++: vs')) :~: ((ctx :++: vs) :++: vs')
+assocProof _ _ = unsafeCoerce Refl -- Todo: Write proof.
