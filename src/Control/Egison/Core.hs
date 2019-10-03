@@ -22,6 +22,7 @@ module Control.Egison.Core (
 
 import           Data.Maybe
 import           Data.Type.Equality
+import           Unsafe.Coerce
 
 ---
 --- Pattern
@@ -71,16 +72,21 @@ data HList xs where
   HNil :: HList '[]
   HCons :: a -> HList as -> HList (a ': as)
 
-type family as :++: bs :: [*] where
-  bs :++: '[] = bs
+type family (as ::[*]) :++: (bs :: [*]) :: [*] where
+  as :++: '[] = as
   '[] :++: bs = bs
   (a ': as) :++: bs = a ': (as :++: bs)
 
 happend :: HList as -> HList bs -> HList (as :++: bs)
 happend HNil ys         = ys
-happend xs@(HCons x xs') ys = case proof x xs' ys of
+happend xs@(HCons x xs') ys = case consAssoc x xs' ys of
                                 Refl -> HCons x $ happend xs' ys
 
-proof :: a -> HList as -> HList bs -> ((a ': as) :++: bs) :~: (a ': (as :++: bs))
-proof _ _ HNil = Refl
-proof x xs (HCons y ys) = Refl
+consAssoc :: a -> HList as -> HList bs -> ((a ': as) :++: bs) :~: (a ': (as :++: bs))
+consAssoc _ _ HNil = Refl
+consAssoc x xs (HCons y ys) = Refl
+
+appendAssoc :: HList as -> HList bs -> HList cs -> ((as :++: bs) :++: cs) :~: (as :++: (bs :++: cs))
+appendAssoc HNil _ _ = Refl
+appendAssoc (HCons _ xs) ys zs = case appendAssoc xs ys zs of
+                                   Refl -> unsafeCoerce Refl -- TODO: ?

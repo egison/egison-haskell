@@ -15,7 +15,8 @@ instance (Matcher m a) => Matcher (TreeM m) (Tree a)
 
 class TreePat m a where
   leafPat :: Pattern a m ctx '[]
-  nodePat :: a ~ (Tree a') => m ~ (f m') => Pattern a' m' ctx xs -> Pattern a m (ctx :++: xs) ys -> Pattern a m (ctx :++: xs :++: ys) zs -> Pattern a m ctx (xs :++: (ys :++: zs))  -- TODO: we want to remove the parenthesis for (ys :++: zs).
+--  nodePat :: a ~ (Tree a') => m ~ (f m') => Pattern a' m' ctx xs -> Pattern a m (ctx :++: xs) ys -> Pattern a m (ctx :++: xs :++: ys) zs -> Pattern a m ctx (xs :++: (ys :++: zs))  -- TODO: we want to remove the parenthesis for (ys :++: zs).
+  nodePat :: a ~ (Tree a') => m ~ (f m') => Pattern a' m' ctx xs -> Pattern a m (ctx :++: xs) ys -> Pattern a m (ctx :++: xs :++: ys) zs -> Pattern a m ctx (xs :++: ys :++: zs)  -- TODO: we want to remove the parenthesis for (ys :++: zs).
 
 instance (Matcher m a) => TreePat (TreeM m) (Tree a) where
   leafPat =
