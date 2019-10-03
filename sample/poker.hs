@@ -1,6 +1,7 @@
 {-# LANGUAGE QuasiQuotes     #-}
 {-# LANGUAGE GADTs           #-}
 {-# LANGUAGE TypeOperators   #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 import Control.Egison hiding (Integer)
 import qualified Control.Egison as M
@@ -9,10 +10,10 @@ data Card = Card Suit Integer
 data Suit = Spade | Heart | Club | Diamond deriving (Eq)
 
 data CardM = CardM
-instance Matcher CardM
+instance Matcher CardM Card
 
 card :: Pattern Suit Eql ctx xs -> Pattern Integer M.Integer (ctx :++: xs) ys -> Pattern Card CardM ctx (xs :++: ys)
-card p1 p2 = Pattern (\_ _ (Card s n) -> [MCons (MAtom p1 Eql s) $ MCons (MAtom p2 M.Integer n) MNil])
+card p1 p2 = Pattern (\_ _ (Card s n) -> [twoMAtoms (MAtom p1 Eql s) (MAtom p2 M.Integer n)])
 
 poker cs =
   match cs (Multiset CardM)

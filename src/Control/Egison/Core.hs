@@ -15,6 +15,9 @@ module Control.Egison.Core (
   MAtom(..),
   MList(..),
   mappend,
+  oneMAtom,
+  twoMAtoms,
+  threeMAtoms,
   -- Heterogeneous list
   HList(..),
   happend,
@@ -73,6 +76,18 @@ mappend (MCons atom atoms1) atoms2 =
     Refl -> case mappendAssocProof atom atoms1 atoms2 of
       Refl -> MCons atom (mappend atoms1 atoms2)
 
+oneMAtom :: MAtom ctx xs -> MList ctx xs
+oneMAtom atom1 = MCons atom1 MNil
+
+twoMAtoms :: MAtom ctx xs -> MAtom (ctx :++: xs) ys -> MList ctx (xs :++: ys)
+twoMAtoms atom1 atom2 = MCons atom1 (MCons atom2 MNil)
+
+threeMAtoms :: MAtom ctx xs -> MAtom (ctx :++: xs) ys -> MAtom (ctx :++: xs :++: ys) zs -> MList ctx (xs :++: ys :++: zs)
+threeMAtoms atom1 atom2 atom3 =
+   unsafeCoerce $ MCons atom1 (MCons atom2 (MCons atom3 MNil))
+--  case mappendAssocProof atom1 (MCons atom2 (MCons atom3 MNil)) of
+--    Refl -> MCons atom1 (MCons atom2 (MCons atom3 MNil))
+
 ---
 --- Heterogeneous list
 ---
@@ -99,4 +114,4 @@ mconsAssocProof :: MAtom ctx vs -> MList (ctx :++: vs) vs' -> (ctx :++: (vs :++:
 mconsAssocProof _ _ = unsafeCoerce Refl -- Todo: Write proof.
 
 mappendAssocProof :: MAtom ctx xs -> MList (ctx :++: xs) ys ->  MList (ctx :++: xs :++: ys) zs -> (xs :++: (ys :++: zs)) :~: ((xs :++: ys) :++: zs)
-mappendAssocProof _ _ = unsafeCoerce Refl -- Todo: Write proof.
+mappendAssocProof _ _ _ = unsafeCoerce Refl -- Todo: Write proof.
