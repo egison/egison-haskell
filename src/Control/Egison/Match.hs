@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs     #-}
+{-# LANGUAGE TypeOperators             #-}
 
 module Control.Egison.Match (
   matchAll,
@@ -8,8 +9,10 @@ module Control.Egison.Match (
   matchDFS,
   ) where
 
+import           Prelude hiding (mappend)
 import           Control.Egison.Core
 import           Unsafe.Coerce
+import           Data.Type.Equality
 
 matchAll :: (Matcher m a) => a -> m -> [MatchClause a m b] -> [b]
 matchAll tgt m [] = []
@@ -62,9 +65,10 @@ processMState (MState rs (MCons (MAtom pat m tgt) atoms)) =
   case pat of
     Pattern f ->
       let matomss = f rs m tgt in
-      map (\newAtoms -> MState rs (MJoin newAtoms atoms)) matomss
+      map (\newAtoms -> MState rs (mappend newAtoms atoms)) matomss
     Wildcard -> [MState rs atoms]
-    PatVar _ -> [unsafeCoerce $ MState (happend rs (HCons tgt HNil)) atoms]
+    PatVar _ -> case proof rs (HCons tgt HNil) atoms of
+                  Refl -> [MState (happend rs (HCons tgt HNil)) atoms]
     AndPat p1 p2 ->
       [unsafeCoerce $ MState rs (MCons (MAtom p1 m tgt) (MCons (MAtom p2 m tgt) $ unsafeCoerce atoms))]
     OrPat p1 p2 ->
@@ -72,8 +76,8 @@ processMState (MState rs (MCons (MAtom pat m tgt) atoms)) =
     NotPat p ->
       [MState rs atoms | null $ processMStatesAll [[MState rs $ MCons (MAtom p m tgt) MNil]]]
     PredicatePat f -> [MState rs atoms | f rs tgt]
-processMState (MState rs (MJoin MNil matoms2)) = processMState (MState rs matoms2)
-processMState (MState rs (MJoin matoms1 matoms2)) =
-  let mstates = processMState (MState rs matoms1) in
-  map (\(MState rs' ms) -> unsafeCoerce $ MState rs' $ MJoin ms matoms2) mstates
 processMState (MState rs MNil) = [MState rs MNil] -- TODO: shold not reach here but reaches here.
+
+proof :: HList xs -> HList '[a] -> MList (xs :++: '[a]) ys -> ((xs :++: '[a]) :++: ys) :~: (xs :++: ('[a] :++: ys))
+proof HNil _ _ = Refl
+proof (HCons _ xs) ys zs = unsafeCoerce Refl -- Todo: Write proof.

@@ -14,12 +14,14 @@ module Control.Egison.Core (
   MState(..),
   MAtom(..),
   MList(..),
+  mappend,
   -- Heterogeneous list
   HList(..),
   happend,
   (:++:),
   ) where
 
+import           Prelude hiding (mappend)
 import           Data.Maybe
 import           Data.Type.Equality
 import           Unsafe.Coerce
@@ -64,6 +66,10 @@ data MList ctx vs where
   MCons :: MAtom ctx xs -> MList (ctx :++: xs) ys -> MList ctx (xs :++: ys)
   MJoin :: MList ctx xs -> MList (ctx :++: xs) ys -> MList ctx (xs :++: ys)
 
+mappend :: MList ctx xs -> MList (ctx :++: xs) ys -> MList ctx (xs :++: ys)
+mappend MNil atoms = atoms
+mappend (MCons atom atoms1) atoms2 = unsafeCoerce $ MCons atom (mappend atoms1 $ unsafeCoerce atoms2)
+
 ---
 --- Heterogeneous list
 ---
@@ -89,4 +95,4 @@ consAssoc x xs (HCons y ys) = Refl
 appendAssoc :: HList as -> HList bs -> HList cs -> ((as :++: bs) :++: cs) :~: (as :++: (bs :++: cs))
 appendAssoc HNil _ _ = Refl
 appendAssoc (HCons _ xs) ys zs = case appendAssoc xs ys zs of
-                                   Refl -> unsafeCoerce Refl -- TODO: ?
+                                   Refl -> unsafeCoerce Refl -- Todo: Write proof.
