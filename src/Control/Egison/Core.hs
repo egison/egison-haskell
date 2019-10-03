@@ -88,17 +88,12 @@ type family (as ::[*]) :++: (bs :: [*]) :: [*] where
 
 happend :: HList as -> HList bs -> HList (as :++: bs)
 happend HNil ys         = ys
-happend xs@(HCons x xs') ys = case consAssoc x xs' ys of
+happend xs@(HCons x xs') ys = case hconsAssocProof x xs' ys of
                                 Refl -> HCons x $ happend xs' ys
 
-consAssoc :: a -> HList as -> HList bs -> ((a ': as) :++: bs) :~: (a ': (as :++: bs))
-consAssoc _ _ HNil = Refl
-consAssoc x xs (HCons y ys) = Refl
-
-appendAssoc :: HList as -> HList bs -> HList cs -> ((as :++: bs) :++: cs) :~: (as :++: (bs :++: cs))
-appendAssoc HNil _ _ = Refl
-appendAssoc (HCons _ xs) ys zs = case appendAssoc xs ys zs of
-                                   Refl -> unsafeCoerce Refl -- Todo: Write proof.
+hconsAssocProof :: a -> HList as -> HList bs -> ((a ': as) :++: bs) :~: (a ': (as :++: bs))
+hconsAssocProof _ _ HNil = Refl
+hconsAssocProof x xs (HCons y ys) = Refl
 
 mconsAssocProof :: MAtom ctx vs -> MList (ctx :++: vs) vs' -> (ctx :++: (vs :++: vs')) :~: ((ctx :++: vs) :++: vs')
 mconsAssocProof _ _ = unsafeCoerce Refl -- Todo: Write proof.
