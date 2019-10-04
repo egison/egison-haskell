@@ -6,7 +6,6 @@
 {-# LANGUAGE TypeOperators         #-}
 
 import           Control.Egison
-import           Unsafe.Coerce
 
 data Tree a = Leaf | Node a (Tree a) (Tree a)
 
@@ -23,15 +22,13 @@ class TreePat m a where
 
 instance (Matcher m a) => TreePat (TreeM m) (Tree a) where
   leafPat =
-    Pattern (\ctx _ t ->
-      case t of
-        Leaf -> [MNil]
-        _    -> [])
+    Pattern (\ctx _ t -> case t of
+                           Leaf -> [MNil]
+                           _    -> [])
   nodePat p1 p2 p3 =
-    Pattern (\ctx (TreeM m) t ->
-      case t of
-         Node v t1 t2 -> [threeMAtoms (MAtom p1 m v) (MAtom p2 (TreeM m) t1) (MAtom p3 (TreeM m) t2)]
-        _ -> [])
+    Pattern (\ctx (TreeM m) t -> case t of
+                                   Node v t1 t2 -> [threeMAtoms (MAtom p1 m v) (MAtom p2 (TreeM m) t1) (MAtom p3 (TreeM m) t2)]
+                                   _ -> [])
 
 main :: IO ()
 main = do
