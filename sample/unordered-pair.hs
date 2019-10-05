@@ -9,17 +9,19 @@ import           Control.Egison hiding (Integer)
 import qualified Control.Egison as M
 
 --
--- UnorderedIntegerPair
+-- UnorderedEqlPair
 --
 
-data UnorderedIntegerPair = UnorderedIntegerPair
-instance Matcher UnorderedIntegerPair (Integer, Integer)
+data UnorderedEqlPair = UnorderedEqlPair
+instance (Eq a) => Matcher UnorderedEqlPair (a, a)
 
-uipair :: Pattern Integer M.Integer ctx xs
-       -> Pattern Integer M.Integer (ctx :++: xs) ys
-       -> Pattern (Integer, Integer) UnorderedIntegerPair ctx (xs :++: ys)
-uipair p1 p2 = Pattern (\_ UnorderedIntegerPair (t1, t2) -> [twoMAtoms (MAtom p1 M.Integer t1) (MAtom p2 M.Integer t2)
-                                                            ,twoMAtoms (MAtom p1 M.Integer t2) (MAtom p2 M.Integer t1)])
+uepair :: (Eq a)
+       => Pattern a Eql ctx xs
+       -> Pattern a Eql (ctx :++: xs) ys
+       -> Pattern (a, a) UnorderedEqlPair ctx (xs :++: ys)
+uepair p1 p2 = Pattern (\_ UnorderedEqlPair (t1, t2) ->
+                          [twoMAtoms (MAtom p1 Eql t1) (MAtom p2 Eql t2)
+                          ,twoMAtoms (MAtom p1 Eql t2) (MAtom p2 Eql t1)])
 
 --
 -- UnorderedPair (parameterized)
@@ -32,8 +34,9 @@ upair :: (Matcher m a , a ~ (b, b), m ~ (UnorderedPair m'), Matcher m' b)
       => Pattern b m' ctx xs
       -> Pattern b m' (ctx :++: xs) ys
       -> Pattern a m ctx (xs :++: ys)
-upair p1 p2 = Pattern (\_ (UnorderedPair m') (t1, t2) -> [twoMAtoms (MAtom p1 m' t1) (MAtom p2 m' t2)
-                                                         ,twoMAtoms (MAtom p1 m' t2) (MAtom p2 m' t1)])
+upair p1 p2 = Pattern (\_ (UnorderedPair m') (t1, t2) ->
+                         [twoMAtoms (MAtom p1 m' t1) (MAtom p2 m' t2)
+                         ,twoMAtoms (MAtom p1 m' t2) (MAtom p2 m' t1)])
 
 --
 -- Main
@@ -42,5 +45,5 @@ upair p1 p2 = Pattern (\_ (UnorderedPair m') (t1, t2) -> [twoMAtoms (MAtom p1 m'
 main :: IO ()
 main = do
   let t1 = (1,2)
-  putStrLn $ show $ matchAll t1 UnorderedIntegerPair [[mc| uipair #2 $x => x |]]
+  putStrLn $ show $ matchAll t1 UnorderedEqlPair [[mc| uepair #2 $x => x |]]
   putStrLn $ show $ matchAll t1 (UnorderedPair Eql) [[mc| upair #2 $x => x |]]
