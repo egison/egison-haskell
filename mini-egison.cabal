@@ -69,4 +69,5 @@ Executable cdcl
     , mini-egison
     , sort
   Hs-Source-Dirs:      sample
+  default-language: Haskell2010
   ghc-options:  -O3
