@@ -59,10 +59,20 @@ spec = do
 --      `shouldBe` "Matched"
 
   describe "match-all with infinitely many results" $ do
-    it "Check the order of pattern-matching results" $
+    it "Check the order of pattern-matching results (multiset bfs) " $
       take 10 (matchAll [1..] (Multiset Integer)
                  [[mc| cons $x (cons $y _) => (x, y) |]])
       `shouldBe` [(1,2),(1,3),(2,1),(1,4),(2,3),(3,1),(1,5),(2,4),(3,2),(4,1)]
+
+    it "Check the order of pattern-matching results (set bfs)" $
+      take 10 (matchAll [1..] (Set Integer)
+                 [[mc| cons $x (cons $y _) => (x, y) |]])
+      `shouldBe` [(1,1),(1,2),(2,1),(1,3),(2,2),(3,1),(1,4),(2,3),(3,2),(4,1)]
+
+    it "Check the order of pattern-matching results (set dfs)" $
+      take 10 (matchAllDFS [1..] (Set Integer)
+                 [[mc| cons $x (cons $y _) => (x, y) |]])
+      `shouldBe` [(1,1),(1,2),(1,3),(1,4),(1,5),(1,6),(1,7),(1,8),(1,9),(1,10)]
 
   describe "built-in pattern constructs" $ do
     it "Predicate patterns" $
