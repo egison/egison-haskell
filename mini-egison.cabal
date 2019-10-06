@@ -1,7 +1,7 @@
 cabal-version: 1.12
 
 name:           mini-egison
-version:        0.1.2
+version:        0.1.3
 synopsis:    Template Haskell Implementation of Egison Pattern Matching
 description: This package provides the pattern-matching facility that fulfills the following three criteria for practical pattern matching for non-free data types\: (i) non-linear pattern matching with backtracking; (ii) extensibility of pattern-matching algorithms; (iii) ad-hoc polymorphism of patterns.
   Non-free data types are data types whose data have no standard forms.

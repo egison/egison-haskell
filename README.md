@@ -117,14 +117,21 @@ It would be better to use `matchAllDFS` instead of `matchAll` when the both expr
 
 ### Matcher definitions
 
-preparing
+The users can define pattern-matching algorithms for each pattern by themselves.
+
+preparing...
 
 ```
+matchAll (1,2) UnorderedEqlPair [[mc| uepair $x $y => (x,y) |]]
+-- [(1,2),(2,1)]
+
 matchAll (1,2) UnorderedEqlPair [[mc| uepair #2 $x => x |]]
 -- [1]
-matchAll (1,2) (UnorderedPair Eql) [[mc| upair #2 $x => x |]]
--- [1]
 ```
+
+A matcher is represented as a data type whose name and constructor's name is identical.
+
+preparing...
 
 ```
 data UnorderedEqlPair = UnorderedEqlPair
@@ -137,6 +144,14 @@ uepair :: (Eq a)
 uepair p1 p2 = Pattern (\_ UnorderedEqlPair (t1, t2) ->
                           [twoMAtoms (MAtom p1 Eql t1) (MAtom p2 Eql t2)
                           ,twoMAtoms (MAtom p1 Eql t2) (MAtom p2 Eql t1)])
+```
+
+```
+matchAll (1,2) (UnorderedPair Eql) [[mc| uepair $x $y => (x,y) |]]
+-- [(1,2),(2,1)]
+
+matchAll (1,2) (UnorderedPair Eql) [[mc| upair #2 $x => x |]]
+-- [1]
 ```
 
 ```
