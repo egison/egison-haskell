@@ -99,6 +99,7 @@ data HList xs where
   HNil :: HList '[]
   HCons :: a -> HList as -> HList (a ': as)
 
+-- | Axioms for heeterogeneous lists.
 type family (as ::[*]) :++: (bs :: [*]) :: [*] where
   as :++: '[] = as
   '[] :++: bs = bs
