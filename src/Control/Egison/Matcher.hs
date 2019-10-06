@@ -6,16 +6,16 @@
 {-# LANGUAGE TypeOperators         #-}
 
 module Control.Egison.Matcher (
-  -- Something matcher
+  -- * @Something@ matcher
   Something(..),
-  -- Eql and Integer matchers
+  -- * @Eql@ and @Integer@ matchers
   ValuePat(..),
   Eql(..),
   Integer(..),
-  -- Pair matcher
+  -- * @Pair@ matcher
   PairPat(..),
   Pair(..),
-  -- Matchers for collections
+  -- * Matchers for collections
   CollectionPat(..),
   List(..),
   Multiset(..),
@@ -28,54 +28,45 @@ import           Control.Egison.Core
 import           Control.Egison.Match
 import           Control.Egison.QQ
 
---
--- Something matcher
---
-
+-- | Something built-in matcher.
 data Something = Something
 instance Matcher Something a
 
---
--- Eql and Integer matchers
---
-
+-- | Value patterns
 class ValuePat m a where
   valuePat :: (Matcher m a, Eq a) => (HList ctx -> a) -> Pattern a m ctx '[]
 
--- Eql matcher
+-- | A matcher for data types that are instances of @Eq@.
 data Eql = Eql
 instance Matcher Eql a
 
 instance Eq a => ValuePat Eql a where
   valuePat f = Pattern (\ctx _ tgt -> [MNil | f ctx == tgt])
 
--- Integer matcher
+-- | A matcher for integers.
 data Integer = Integer
 instance Integral a => Matcher Integer a
 
 instance Integral a => ValuePat Integer a where
   valuePat f = Pattern (\ctx _ tgt -> [MNil | f ctx == tgt])
 
----
---- Pair matcher
----
 
-data Pair m1 m2 = Pair m1 m2
-instance (Matcher m1 a1, Matcher m2 a2) => Matcher (Pair m1 m2) (a1, a2)
-
+-- | A pattern constructor for pairs.
 class PairPat m a where
   pair :: (Matcher m a , a ~ (b1, b2), m ~ (Pair m1 m2))
        => Pattern b1 m1 ctx xs
        -> Pattern b2 m2 (ctx :++: xs) ys
        -> Pattern a m ctx (xs :++: ys)
 
+-- | A matcher for a pair of data.
+data Pair m1 m2 = Pair m1 m2
+instance (Matcher m1 a1, Matcher m2 a2) => Matcher (Pair m1 m2) (a1, a2)
+
 instance (Matcher m1 a1, Matcher m2 a2) => PairPat (Pair m1 m2) (a1, a2) where
   pair p1 p2 = Pattern (\_ (Pair m1 m2) (t1, t2) -> [twoMAtoms (MAtom p1 m1 t1) (MAtom p2 m2 t2)])
 
----
---- Matchers for collections
----
 
+-- | Patterns for collections.
 class CollectionPat m a where
   nil  :: (Matcher m a) => Pattern a m ctx '[]
   cons :: (Matcher m a, a ~ [a'], m ~ (f m'))
@@ -87,7 +78,7 @@ class CollectionPat m a where
        -> Pattern a m (ctx :++: xs) ys
        -> Pattern a m ctx (xs :++: ys)
 
--- List matcher
+-- | a matcher for a list.
 newtype List m = List m
 instance (Matcher m a) => Matcher (List m) [a]
 
@@ -111,7 +102,7 @@ splits :: [a] -> [([a], [a])]
 splits []     = [([], [])]
 splits (x:xs) = ([], x:xs) : [(x:ys, zs) | (ys, zs) <- splits xs]
 
--- Multiset matcher
+-- | a matcher for a multiset.
 newtype Multiset m = Multiset m
 instance (Matcher m a) => Matcher (Multiset m) [a]
 
@@ -129,7 +120,7 @@ instance (Matcher m a) => CollectionPat (Multiset m) [a] where
                                                    (matchAll tgt (List m) [[mc| join $hs (cons $x $ts) => (x, hs ++ ts) |]]))
   join p1 p2 = undefined
 
--- Set matcher
+-- | a matcher for a set.
 newtype Set m = Set m
 instance (Matcher m a) => Matcher (Set m) [a]
 
