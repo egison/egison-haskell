@@ -77,11 +77,80 @@ matchAll [1,2,5,9,4] (Multiset Integer) [[mc| cons $x (cons #(x+1) _) => x|]]
 
 ### The `match` expression
 
-preparing...
+The `match` expression takes a target, a matcher, and match-clauses as the `matchAll` expression.
+The `match` expression returns only the evaluation result of the first pattern-matching result.
+
+```
+match [1,2,5,9,4] (Multiset Integer) [[mc| cons $x (cons #(x+1) _) => x|]]
+-- 1
+```
+
+The `match` expression is simply implemented using `matchAll` as follows:
+
+```
+match tgt m cs = head $ matchAll tgt m cs
+```
 
 ### `matchAllDFS` and `matchDFS`
 
-preparing...
+The `matchAll` and `match` expressions traverse a search tree for pattern matching in breadth-first order.
+The reason of the default breadth-first traversal is because to enumerate all the successful pattern-matching results even when they are infinitely many.
+For example, all the pairs of natural numbers can be enumerated by the following `matchAll` expression:
+
+```
+take 10 (matchAll [1..] (Set Integer)
+           [[mc| cons $x (cons $y _) => (x, y) |]])
+-- [(1,1),(1,2),(2,1),(1,3),(2,2),(3,1),(1,4),(2,3),(3,2),(4,1)]
+```
+
+If we change the above `matchAll` to `matchAllDFS`, the order of the pattern-matching results changes as follows:
+
+```
+take 10 (matchAllDFS [1..] (Set Integer)
+           [[mc| cons $x (cons $y _) => (x, y) |]])
+-- [(1,1),(1,2),(1,3),(1,4),(1,5),(1,6),(1,7),(1,8),(1,9),(1,10)]
+```
+
+There are cases where depth-first traversal is suitable because the depth-first order of pattern-matching results is preferable.
+Furthermore, `matchAllDFS` is more efficient than `matchAll`.
+It would be better to use `matchAllDFS` instead of `matchAll` when the both expressions can be used.
+
+### Matcher definitions
+
+preparing
+
+```
+matchAll (1,2) UnorderedEqlPair [[mc| uepair #2 $x => x |]]
+-- [1]
+matchAll (1,2) (UnorderedPair Eql) [[mc| upair #2 $x => x |]]
+-- [1]
+```
+
+```
+data UnorderedEqlPair = UnorderedEqlPair
+instance (Eq a) => Matcher UnorderedEqlPair (a, a)
+
+uepair :: (Eq a)
+       => Pattern a Eql ctx xs
+       -> Pattern a Eql (ctx :++: xs) ys
+       -> Pattern (a, a) UnorderedEqlPair ctx (xs :++: ys)
+uepair p1 p2 = Pattern (\_ UnorderedEqlPair (t1, t2) ->
+                          [twoMAtoms (MAtom p1 Eql t1) (MAtom p2 Eql t2)
+                          ,twoMAtoms (MAtom p1 Eql t2) (MAtom p2 Eql t1)])
+```
+
+```
+data UnorderedPair m = UnorderedPair m
+instance Matcher m a => Matcher (UnorderedPair m) (a, a)
+
+upair :: (Matcher m a , a ~ (b, b), m ~ (UnorderedPair m'), Matcher m' b)
+      => Pattern b m' ctx xs
+      -> Pattern b m' (ctx :++: xs) ys
+      -> Pattern a m ctx (xs :++: ys)
+upair p1 p2 = Pattern (\_ (UnorderedPair m') (t1, t2) ->
+                         [twoMAtoms (MAtom p1 m' t1) (MAtom p2 m' t2)
+                         ,twoMAtoms (MAtom p1 m' t2) (MAtom p2 m' t1)])
+```
 
 ## Samples
 
