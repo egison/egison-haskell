@@ -1,3 +1,5 @@
+-- | A library for user-extensible non-linear pattern matching with backtracking.
+
 module Control.Egison
   ( module Control.Egison.Core
   , module Control.Egison.Match

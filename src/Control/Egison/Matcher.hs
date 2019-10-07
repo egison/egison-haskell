@@ -5,6 +5,8 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE TypeOperators         #-}
 
+-- | Matcher definitions.
+
 module Control.Egison.Matcher (
   -- * @Something@ matcher
   Something(..),
@@ -29,14 +31,16 @@ import           Control.Egison.Match
 import           Control.Egison.QQ
 
 -- | Something built-in matcher.
+-- The @Something@ matcher can handle only a pattern variable and a wildcard.
 data Something = Something
 instance Matcher Something a
 
--- | Value patterns
+-- | Value patterns.
 class ValuePat m a where
   valuePat :: (Matcher m a, Eq a) => (HList ctx -> a) -> Pattern a m ctx '[]
 
 -- | A matcher for data types that are instances of @Eq@.
+-- The @Eql@ matcher can handle a pattern variable, a wildcard, and a value pattern.
 data Eql = Eql
 instance Matcher Eql a
 
@@ -44,6 +48,7 @@ instance Eq a => ValuePat Eql a where
   valuePat f = Pattern (\ctx _ tgt -> [MNil | f ctx == tgt])
 
 -- | A matcher for integers.
+-- The @Integer@ matcher can handle a pattern variable, a wildcard, and a value pattern.
 data Integer = Integer
 instance Integral a => Matcher Integer a
 
@@ -68,11 +73,14 @@ instance (Matcher m1 a1, Matcher m2 a2) => PairPat (Pair m1 m2) (a1, a2) where
 
 -- | Patterns for collections.
 class CollectionPat m a where
+  -- | The @nil@ pattern matches an empty collection.
   nil  :: (Matcher m a) => Pattern a m ctx '[]
+  -- | The @cons@ pattern decomposes a collection into an element and the rest elements.
   cons :: (Matcher m a, a ~ [a'], m ~ (f m'))
        => Pattern a' m' ctx xs
        -> Pattern a m (ctx :++: xs) ys
        -> Pattern a m ctx (xs :++: ys)
+  -- | The @join@ pattern decomposes a collection into two collections.
   join :: (Matcher m a)
        => Pattern a m ctx xs
        -> Pattern a m (ctx :++: xs) ys
@@ -103,6 +111,7 @@ splits []     = [([], [])]
 splits (x:xs) = ([], x:xs) : [(x:ys, zs) | (ys, zs) <- splits xs]
 
 -- | a matcher for a multiset.
+-- When we regard a collection as a multiset, the order of elements is ignored but the number of times an element appears in the collection is counted.
 newtype Multiset m = Multiset m
 instance (Matcher m a) => Matcher (Multiset m) [a]
 
@@ -115,6 +124,7 @@ instance (Matcher m a, Eq a, ValuePat m a) => ValuePat (Multiset m) [a] where
 
 instance (Matcher m a) => CollectionPat (Multiset m) [a] where
   nil = Pattern (\_ _ tgt -> [MNil | null tgt])
+  -- | The @cons@ pattern for a multiset decomposes a collection into an arbitrary element and the rest elements.
   cons p Wildcard = Pattern (\_ (Multiset m) tgt -> map (\x -> oneMAtom (MAtom p m x)) tgt)
   cons p1 p2 = Pattern (\_ (Multiset m) tgt -> map (\(x, xs) -> twoMAtoms (MAtom p1 m x) (MAtom p2 (Multiset m) xs))
                                                    (matchAll tgt (List m) [[mc| join $hs (cons $x $ts) => (x, hs ++ ts) |]]))

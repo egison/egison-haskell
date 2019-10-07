@@ -5,6 +5,8 @@
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE TypeOperators             #-}
 
+-- | Definitions of data types for patterns, matchers, match clauses, matching states, and matching atoms.
+
 module Control.Egison.Core (
   -- * Patterns
   Pattern(..),
@@ -34,7 +36,7 @@ import           Unsafe.Coerce
 ---
 
 -- | A pattern for data of a type @a@ for a matcher @m@.
--- @ctx@ is an intermediate pattern-matching result and a type of a list of data bound in the left-side of the pattern.
+-- @ctx@ is an intermediate pattern-matching result that is a type of a list of data bound in the left-side of the pattern.
 -- @vs@ is a list of types bound to the pattern variables in this pattern.
 data Pattern a m ctx vs where
   Wildcard :: Pattern a m ctx '[]
@@ -94,12 +96,12 @@ threeMAtoms atom1 atom2 atom3 =
   case threeMConsAssocProof atom1 atom2 atom3 of
     Refl -> MCons atom1 (MCons atom2 (MCons atom3 MNil))
 
--- | Heterogeneous list.
+-- | Heterogeneous lists.
 data HList xs where
   HNil :: HList '[]
   HCons :: a -> HList as -> HList (a ': as)
 
--- | Axioms for heeterogeneous lists.
+-- | Axioms for heterogeneous lists.
 type family (as ::[*]) :++: (bs :: [*]) :: [*] where
   as :++: '[] = as
   '[] :++: bs = bs

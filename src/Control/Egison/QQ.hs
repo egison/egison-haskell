@@ -1,6 +1,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections   #-}
 
+-- | Quasiquotation for rewriting a match clause.
+
 module Control.Egison.QQ (
   mc,
   ) where
@@ -16,8 +18,62 @@ import           Language.Haskell.TH.Quote
 import           Language.Haskell.TH.Syntax
 import           Text.Regex
 
-
-
+-- | Quasiquoter for rewriting a match clause.
+--
+-- * /Wildcards/
+--
+-- A match clause that contains a wildcard
+--
+-- > [mc| _ => "Matched" |]
+--
+-- is rewrited to
+--
+-- > MatchClause Wildcard
+-- >             (\HNil -> "Matched")
+--
+-- * /Pattern variables/
+--
+-- A match clause that contains a pattern variable
+--
+-- > [mc| $x => x |]
+--
+-- is rewrited to
+--
+-- > MatchClause (PatVar "x")
+-- >             (\HCons x HNil -> x)
+--
+-- * /Value patterns/
+--
+-- A match clause that contains a value pattern
+--
+-- > [mc| cons $x (cons $y (cons #(x + 1) (cons $z nil))) => (x, y, z) |]
+--
+-- is rewrited to
+--
+-- > MatchClause (cons (PatVar "x") (cons (PatVar "y") (cons (ValuePat (\HCons x (HCons (y HNil)) -> x + 1)) (cons (PatVar "z") nil))))
+-- >             (\HCons x (HCons (y (HCons z HNil))) -> (x, y, z))
+--
+-- * /And-patterns/
+--
+-- A match clause that contains an and-pattern
+--
+-- > [mc| (& (cons _ _) $x) => x |]
+--
+-- is rewrited to
+--
+-- > MatchClause (AndPat (cons Wildcard Wildcard) (PatVar "x"))
+-- >             (\HCons x HNil -> x)
+--
+-- * /Or-patterns/
+--
+-- A match clause that contains an or-pattern
+--
+-- > [mc| (| nil (cons _ _)) => "Matched" |]
+--
+-- is rewrited to
+--
+-- > MatchClause (OrPat nil (cons Wildcard Wildcard))
+-- >             (\HNil -> "Matched")
 mc :: QuasiQuoter
 mc = QuasiQuoter { quoteExp = \s -> do
                       let [pat, exp] = splitOn "=>" s
