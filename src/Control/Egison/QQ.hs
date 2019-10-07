@@ -18,7 +18,7 @@ import           Language.Haskell.TH.Quote
 import           Language.Haskell.TH.Syntax
 import           Text.Regex
 
--- | Quasiquoter for rewriting a match clause.
+-- | A quasiquoter for rewriting a match clause.
 --
 -- * /Wildcards/
 --

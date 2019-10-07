@@ -48,7 +48,7 @@ data Pattern a m ctx vs where
   -- | User-defined pattern; pattern is a function that takes a target, an intermediate pattern-matching result, and a matcher and returns a list of lists of matching atoms.
   Pattern :: Matcher m a => (HList ctx -> m -> a -> [MList ctx vs]) -> Pattern a m ctx vs
 
--- | @m@ is a matcher for data of a type @a@.
+-- | The @Matcher@ class is used to declare that @m@ is a matcher for data of a type @a@.
 class Matcher m a
 
 -- | A match clause of a match expression whose target data is @a@ and matcher is @m@.
