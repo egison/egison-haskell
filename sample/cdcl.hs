@@ -1,8 +1,7 @@
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE QuasiQuotes           #-}
-{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE TypeOperators         #-}
 
 import           Data.List

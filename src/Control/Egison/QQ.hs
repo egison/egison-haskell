@@ -1,6 +1,3 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TupleSections   #-}
-
 -- | Quasiquotation for rewriting a match clause.
 
 module Control.Egison.QQ (

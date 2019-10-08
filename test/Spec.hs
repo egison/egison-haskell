@@ -1,6 +1,3 @@
-{-# LANGUAGE GADTs       #-}
-{-# LANGUAGE QuasiQuotes #-}
-
 module Spec (spec) where
 
 import           Control.Egison

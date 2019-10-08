@@ -1,7 +1,3 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE GADTs     #-}
-{-# LANGUAGE TypeOperators             #-}
-
 -- | Pattern-matching expressions.
 
 module Control.Egison.Match (

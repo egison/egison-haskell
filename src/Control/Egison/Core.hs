@@ -1,10 +1,3 @@
-{-# LANGUAGE DataKinds                 #-}
-{-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE GADTs                     #-}
-{-# LANGUAGE MultiParamTypeClasses     #-}
-{-# LANGUAGE TypeFamilies              #-}
-{-# LANGUAGE TypeOperators             #-}
-
 -- | Definitions of data types for patterns, matchers, match clauses, matching states, and matching atoms.
 
 module Control.Egison.Core (
