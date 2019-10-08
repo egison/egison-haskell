@@ -49,10 +49,24 @@ data Pattern a m ctx vs where
   Pattern :: Matcher m a => (HList ctx -> m -> a -> [MList ctx vs]) -> Pattern a m ctx vs
 
 -- | The @Matcher@ class is used to declare that @m@ is a matcher for data of a type @a@.
+-- For example,
+-- 
+-- > instance (Matcher m a) => Matcher (Multiset m) [a]
+-- 
+-- declares that "let @m@ be a matcher for @a@, @(Multiset m)@ is a matcher for @[a]@".
 class Matcher m a
 
 -- | A match clause of a match expression whose target data is @a@ and matcher is @m@.
 -- The body of the match clause is evaluated to @b@.
+-- 
+-- The first argument of @MatchClause@ is a pattern for @a@ with a matcher @m@.
+-- This pattern makes a binding whose type is @vs@.
+-- The second argument of @MatchClause@ is a function that takes a heterogeneous list containing @vs@ and returns @b@.
+-- 
+-- @vs@ is existentially quantified because generally each pattern of the list of match clauses in a pattern-matching expression makes different bindings.
+-- 
+-- Several samples of @MatchClause@s are found in "Control.Egison.QQ".
+-- The 'Control.Egison.QQ.mc' quasiquoter allows us to describe a match clause in user-friendly syntax.
 data MatchClause a m b = forall vs. (Matcher m a) => MatchClause (Pattern a m '[] vs) (HList vs -> b)
 
 ---
@@ -61,15 +75,18 @@ data MatchClause a m b = forall vs. (Matcher m a) => MatchClause (Pattern a m '[
 
 -- | A matching state.
 -- A matching state consists of an intermediate pattern-matching result and a stack of matching atoms.
+-- @vs@ is a list of types bound to the pattern variables in the pattern after processing @MState@.
 data MState vs where
   MState :: vs ~ (xs :++: ys) => HList xs -> MList xs ys -> MState vs
 
 -- | A matching atom.
 -- @ctx@ is a intermediate pattern-matching result.
 -- @vs@ is a list of types bound to the pattern variables by processing this matching atom.
+-- The types of a target @a@ and a matcher @m@ are existentially quantified each matching atom in a stack of matching atoms contains a pattern, matcher, and target for a different type.
 data MAtom ctx vs = forall a m. (Matcher m a) => MAtom (Pattern a m ctx vs) m a
 
--- | A stack of matching atoms
+-- | A list of matching atoms.
+-- It is used to represent a stack of matching atoms in a matching state.
 data MList ctx vs where
   MNil :: MList ctx '[]
   MCons :: MAtom ctx xs -> MList (ctx :++: xs) ys -> MList ctx (xs :++: ys)

@@ -86,7 +86,7 @@ class CollectionPat m a where
        -> Pattern a m (ctx :++: xs) ys
        -> Pattern a m ctx (xs :++: ys)
 
--- | a matcher for a list.
+-- | A matcher for a list.
 newtype List m = List m
 instance (Matcher m a) => Matcher (List m) [a]
 
@@ -110,7 +110,7 @@ splits :: [a] -> [([a], [a])]
 splits []     = [([], [])]
 splits (x:xs) = ([], x:xs) : [(x:ys, zs) | (ys, zs) <- splits xs]
 
--- | a matcher for a multiset.
+-- | A matcher for a multiset.
 -- When we regard a collection as a multiset, the order of elements is ignored but the number of times an element appears in the collection is counted.
 newtype Multiset m = Multiset m
 instance (Matcher m a) => Matcher (Multiset m) [a]
@@ -130,7 +130,7 @@ instance (Matcher m a) => CollectionPat (Multiset m) [a] where
                                                    (matchAll tgt (List m) [[mc| join $hs (cons $x $ts) => (x, hs ++ ts) |]]))
   join p1 p2 = undefined
 
--- | a matcher for a set.
+-- | A matcher for a set. Both the order and the repetition of elements are ignored.
 newtype Set m = Set m
 instance (Matcher m a) => Matcher (Set m) [a]
 
