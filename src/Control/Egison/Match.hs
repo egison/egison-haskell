@@ -84,7 +84,7 @@ processMState (MState rs (MCons (MAtom pat m tgt) atoms)) =
     NotPat p ->
       [MState rs atoms | null $ processMStatesAll [[MState rs $ MCons (MAtom p m tgt) MNil]]]
     PredicatePat f -> [MState rs atoms | f rs tgt]
-processMState (MState rs MNil) = [MState rs MNil] -- TODO: shold not reach here but reaches here.
+processMState (MState rs MNil) = undefined -- or [MState rs MNil] -- TODO: shold not reach here but reaches here.
 
 patVarProof :: HList xs -> HList '[a] -> MList (xs :++: '[a]) ys -> ((xs :++: '[a]) :++: ys) :~: (xs :++: ('[a] :++: ys))
 patVarProof HNil _ _ = Refl

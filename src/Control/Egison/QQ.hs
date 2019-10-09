@@ -24,7 +24,7 @@ import           Text.Regex
 -- 
 -- > [mc| _ => "Matched" |]
 -- 
--- is rewrited to
+-- is rewritten to
 -- 
 -- > MatchClause Wildcard
 -- >             (\HNil -> "Matched")
@@ -35,7 +35,7 @@ import           Text.Regex
 -- 
 -- > [mc| $x => x |]
 -- 
--- is rewrited to
+-- is rewritten to
 -- 
 -- > MatchClause (PatVar "x")
 -- >             (\HCons x HNil -> x)
@@ -46,7 +46,7 @@ import           Text.Regex
 -- 
 -- > [mc| cons $x (cons $y (cons #(x + 1) (cons $z nil))) => (x, y, z) |]
 -- 
--- is rewrited to
+-- is rewritten to
 -- 
 -- > MatchClause (cons (PatVar "x") (cons (PatVar "y") (cons (ValuePat (\HCons x (HCons (y HNil)) -> x + 1)) (cons (PatVar "z") nil))))
 -- >             (\HCons x (HCons (y (HCons z HNil))) -> (x, y, z))
@@ -57,7 +57,7 @@ import           Text.Regex
 -- 
 -- > [mc| (& (cons _ _) $x) => x |]
 -- 
--- is rewrited to
+-- is rewritten to
 -- 
 -- > MatchClause (AndPat (cons Wildcard Wildcard) (PatVar "x"))
 -- >             (\HCons x HNil -> x)
@@ -68,7 +68,7 @@ import           Text.Regex
 -- 
 -- > [mc| (| nil (cons _ _)) => "Matched" |]
 -- 
--- is rewrited to
+-- is rewritten to
 -- 
 -- > MatchClause (OrPat nil (cons Wildcard Wildcard))
 -- >             (\HNil -> "Matched")
