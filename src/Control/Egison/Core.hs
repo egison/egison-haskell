@@ -32,14 +32,14 @@ import           Unsafe.Coerce
 -- @ctx@ is an intermediate pattern-matching result that is a type of a list of data bound in the left-side of the pattern.
 -- @vs@ is a list of types bound to the pattern variables in this pattern.
 data Pattern a m ctx vs where
-  Wildcard :: Pattern a m ctx '[]
-  PatVar :: String -> Pattern a m ctx '[a]
-  AndPat :: Pattern a m ctx vs -> Pattern a m (ctx :++: vs) vs' -> Pattern a m ctx (vs :++: vs')
-  OrPat  :: Pattern a m ctx vs -> Pattern a m ctx vs -> Pattern a m ctx vs
-  NotPat :: Pattern a m ctx '[] -> Pattern a m ctx '[]
-  PredicatePat :: (HList ctx -> a -> Bool) -> Pattern a m ctx '[]
+  Wildcard     :: (Matcher m a) => Pattern a m ctx '[]
+  PatVar       :: (Matcher m a) => String -> Pattern a m ctx '[a]
+  AndPat       :: (Matcher m a) => Pattern a m ctx vs -> Pattern a m (ctx :++: vs) vs' -> Pattern a m ctx (vs :++: vs')
+  OrPat        :: (Matcher m a) => Pattern a m ctx vs -> Pattern a m ctx vs -> Pattern a m ctx vs
+  NotPat       :: (Matcher m a) => Pattern a m ctx '[] -> Pattern a m ctx '[]
+  PredicatePat :: (Matcher m a) => (HList ctx -> a -> Bool) -> Pattern a m ctx '[]
   -- | User-defined pattern; pattern is a function that takes a target, an intermediate pattern-matching result, and a matcher and returns a list of lists of matching atoms.
-  Pattern :: Matcher m a => (HList ctx -> m -> a -> [MList ctx vs]) -> Pattern a m ctx vs
+  Pattern      :: (Matcher m a) => (HList ctx -> m -> a -> [MList ctx vs]) -> Pattern a m ctx vs
 
 -- | The @Matcher@ class is used to declare that @m@ is a matcher for data of a type @a@.
 -- For example,

@@ -42,7 +42,7 @@ class ValuePat m a where
 -- | A matcher for data types that are instances of @Eq@.
 -- The @Eql@ matcher can handle a pattern variable, a wildcard, and a value pattern.
 data Eql = Eql
-instance Matcher Eql a
+instance (Eq a) => Matcher Eql a
 
 instance Eq a => ValuePat Eql a where
   valuePat f = Pattern (\ctx _ tgt -> [MNil | f ctx == tgt])
