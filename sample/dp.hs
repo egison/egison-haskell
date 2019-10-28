@@ -45,17 +45,23 @@ resolveOn v cnf =
 dp :: [Integer] -> [[Integer]] -> Bool
 dp vars cnf =
   match (vars, cnf) (Pair (Multiset Literal) (Multiset (Multiset Literal)))
-    [[mc| (pair _ nil) => True |],
+    [-- satisfiable
+     [mc| (pair _ nil) => True |],
+     -- unsatisfiable
      [mc| (pair _ (cons nil _)) => False |],
+     -- 1-literal rule
      [mc| (pair _ (cons (cons $l nil) _)) =>
             dp (delete (abs l) vars) (assignTrue l cnf) |],
+     -- pure literal rule (positive)
      [mc| (pair (cons $v $vs) (not (cons (cons #v _) _))) =>
             dp vs (assignTrue v cnf) |],
+     -- pure literal rule (negative)
      [mc| (pair (cons $v $vs) (not (cons (cons #(negate v) _) _))) =>
             dp vs (assignTrue (negate v) cnf) |],
+     -- otherwise
      [mc| (pair (cons $v $vs) _) =>
-            dp vs (resolveOn v cnf ++ deleteClausesWith v (deleteClausesWith (negate v) cnf)) |]
-     ]
+            dp vs (resolveOn v cnf ++
+                   deleteClausesWith v (deleteClausesWith (negate v) cnf)) |]]
 
 main = do
   putStrLn $ show $ dp [] []

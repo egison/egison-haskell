@@ -16,6 +16,10 @@ pmConcat :: [[a]] -> [a]
 pmConcat xss = matchAll xss (Multiset (Multiset Something))
                  [[mc| cons (cons $x _) _ => x |]]
 
+pmUniq :: (Eq a) => [a] -> [a]
+pmUniq xs = matchAll xs (List Eql)
+               [[mc| join _ (cons $x (not (join _ (cons #x _)))) => x |]]
+
 spec :: Spec
 spec = do
   describe "list and multiset matchers" $ do
@@ -98,5 +102,5 @@ spec = do
       pmap (+ 10) [1,2,3] `shouldBe` [11, 12, 13]
     it "concat" $
       pmConcat [[1,2], [3], [4, 5]] `shouldBe` [1..5]
-    -- it "uniq" $
-    --   pmUniq [1,1,2,3,2] `shouldBe` [1,2,3]
+    it "uniq" $
+      pmUniq [1,1,2,3,2] `shouldBe` [1,3,2]
