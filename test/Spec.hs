@@ -20,6 +20,14 @@ pmUniq :: (Eq a) => [a] -> [a]
 pmUniq xs = matchAll xs (List Eql)
                [[mc| join _ (cons $x (not (join _ (cons #x _)))) => x |]]
 
+pmIntersect :: (Eq a) => [a] -> [a] -> [a]
+pmIntersect xs ys = matchAll (xs, ys) (Pair (Multiset Eql) (Multiset Eql))
+                      [[mc| pair (cons $x _) (cons #x _) => x |]]
+
+pmDiff :: (Eq a) => [a] -> [a] -> [a]
+pmDiff xs ys = matchAll (xs, ys) (Pair (Multiset Eql) (Multiset Eql))
+                 [[mc| pair (cons $x _) (not (cons #x _)) => x |]]
+
 spec :: Spec
 spec = do
   describe "list and multiset matchers" $ do
@@ -104,3 +112,7 @@ spec = do
       pmConcat [[1,2], [3], [4, 5]] `shouldBe` [1..5]
     it "uniq" $
       pmUniq [1,1,2,3,2] `shouldBe` [1,3,2]
+    it "intersect" $
+      pmIntersect [1,2,3,4] [2,4,5] `shouldBe` [2,4]
+    it "diff" $
+      pmDiff [1,2,3,4] [2,4,5] `shouldBe` [1,3]
