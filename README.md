@@ -1,4 +1,5 @@
 # miniEgison: Template Haskell Implementation of Egison Pattern Matching
+[![Build Status](https://travis-ci.org/egison/egison-haskell.svg?branch=master)](https://travis-ci.org/egison/egison-haskell)
 
 This Haskell library provides the users with the pattern-matching facility against non-free data types.
 Non-free data types are data types whose data have no standard forms.
