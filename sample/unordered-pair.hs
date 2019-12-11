@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE QuasiQuotes           #-}
@@ -30,10 +31,10 @@ uepair p1 p2 = Pattern (\_ UnorderedEqlPair (t1, t2) ->
 data UnorderedPair m = UnorderedPair m
 instance Matcher m a => Matcher (UnorderedPair m) (a, a)
 
-upair :: (Matcher m a , a ~ (b, b), m ~ (UnorderedPair m'), Matcher m' b)
-      => Pattern b m' ctx xs
-      -> Pattern b m' (ctx :++: xs) ys
-      -> Pattern a m ctx (xs :++: ys)
+upair :: (Matcher m (a, a), m ~ (UnorderedPair m'), Matcher m' a)
+      => Pattern a m' ctx xs
+      -> Pattern a m' (ctx :++: xs) ys
+      -> Pattern (a, a) m ctx (xs :++: ys)
 upair p1 p2 = Pattern (\_ (UnorderedPair m') (t1, t2) ->
                          [twoMAtoms (MAtom p1 m' t1) (MAtom p2 m' t2)
                          ,twoMAtoms (MAtom p1 m' t2) (MAtom p2 m' t1)])
