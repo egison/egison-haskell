@@ -8,15 +8,15 @@ combinations n xs = [ y:ys | y:xs' <- tails xs
 
 comb2 :: [a] -> [(a,a)]
 comb2 xs = [ (y,z) | y:ts <- tails xs
-                   , z:_  <- tails ts ]
+                   , z <- ts ]
 
 main = do
   args <- getArgs
   let n = read (head args)
-  let ans = combinations 2 [1..n]
+--  let ans = combinations 2 [1..n]
   let ans2 = comb2 [1..n]
-  putStrLn $ show $ length ans
+--  putStrLn $ show $ length ans
   putStrLn $ show $ length ans2
-  putStrLn $ show $ ans2
-  putStrLn $ show $ tails [1..n]
-  putStrLn $ show $ (tails []  :: [[Int]])
+--  putStrLn $ show $ ans2
+--  putStrLn $ show $ tails [1..n]
+--  putStrLn $ show $ (tails []  :: [[Int]])
