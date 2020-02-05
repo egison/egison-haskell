@@ -16,10 +16,11 @@ import           Data.Type.Equality
 -- @matchAll@ collects all the pattern-matching results and returns a list of the results evaluating the body expression for each pattern-matching result.
 -- @matchAll@ traverses a search tree for pattern matching in breadth-first order.
 matchAll :: (Matcher m a) => a -> m -> [MatchClause a m b] -> [b]
-matchAll tgt m [] = []
-matchAll tgt m ((MatchClause pat f):cs) =
-  let results = processMStatesAll [[MState HNil (MCons (MAtom pat m tgt) MNil)]] in
-  map f results ++ matchAll tgt m cs
+matchAll tgt m = foldr go []
+  where
+    go (MatchClause pat f) acc =
+      let results = processMStatesAll [[MState HNil (MCons (MAtom pat m tgt) MNil)]] in
+      map f results ++ acc
 
 -- | @match@ takes a target, a matcher, and a list of match clauses.
 -- @match@ calculates only the first pattern-matching result and returns the results evaluating the body expression for the first pattern-matching result.
@@ -29,10 +30,11 @@ match tgt m cs = head $ matchAll tgt m cs
 
 -- | @matchAllDFS@ is much similar to @matchAll@ but traverses a search tree for pattern matching in depth-first order.
 matchAllDFS :: (Matcher m a) => a -> m -> [MatchClause a m b] -> [b]
-matchAllDFS tgt m [] = []
-matchAllDFS tgt m ((MatchClause pat f):cs) =
-  let results = processMStatesAllDFS [MState HNil (MCons (MAtom pat m tgt) MNil)] in
-  map f results ++ matchAllDFS tgt m cs
+matchAllDFS tgt m = foldr go []
+  where
+    go (MatchClause pat f) acc =
+      let results = processMStatesAllDFS [MState HNil (MCons (MAtom pat m tgt) MNil)] in
+      map f results ++ acc
 
 -- | @matchDFS@ is much similar to @match@ but traverses a search tree for pattern matching in depth-first order.
 matchDFS :: (Matcher m a) => a -> m -> [MatchClause a m b] -> b
