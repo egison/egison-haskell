@@ -93,14 +93,17 @@ mappend (MCons atom atoms1) atoms2 =
       Refl -> MCons atom (mappend atoms1 atoms2)
 
 -- | Create a list of a single matching atom.
+{-# INLINE oneMAtom #-}
 oneMAtom :: MAtom ctx xs -> MList ctx xs
 oneMAtom atom1 = MCons atom1 MNil
 
 -- | Create a list of two matching atoms.
+{-# INLINE twoMAtoms #-}
 twoMAtoms :: MAtom ctx xs -> MAtom (ctx :++: xs) ys -> MList ctx (xs :++: ys)
 twoMAtoms atom1 atom2 = MCons atom1 (MCons atom2 MNil)
 
 -- | Create a list of three matching atoms.
+{-# INLINE threeMAtoms #-}
 threeMAtoms :: MAtom ctx xs -> MAtom (ctx :++: xs) ys -> MAtom (ctx :++: xs :++: ys) zs -> MList ctx (xs :++: ys :++: zs)
 threeMAtoms atom1 atom2 atom3 =
   case threeMConsAssocProof atom1 atom2 atom3 of
@@ -123,15 +126,19 @@ happend HNil ys         = ys
 happend xs@(HCons x xs') ys = case hconsAssocProof x xs' ys of
                                 Refl -> HCons x $ happend xs' ys
 
+{-# INLINE hconsAssocProof #-}
 hconsAssocProof :: a -> HList as -> HList bs -> ((a ': as) :++: bs) :~: (a ': (as :++: bs))
 hconsAssocProof _ _ HNil = Refl
 hconsAssocProof x xs (HCons y ys) = Refl
 
+{-# INLINE mconsAssocProof #-}
 mconsAssocProof :: MAtom ctx vs -> MList (ctx :++: vs) vs' -> (ctx :++: (vs :++: vs')) :~: ((ctx :++: vs) :++: vs')
 mconsAssocProof _ _ = unsafeCoerce Refl -- Todo: Write proof.
 
+{-# INLINE mappendAssocProof #-}
 mappendAssocProof :: MAtom ctx xs -> MList (ctx :++: xs) ys ->  MList (ctx :++: xs :++: ys) zs -> (xs :++: (ys :++: zs)) :~: ((xs :++: ys) :++: zs)
 mappendAssocProof _ _ _ = unsafeCoerce Refl -- Todo: Write proof.
 
+{-# INLINE threeMConsAssocProof #-}
 threeMConsAssocProof :: MAtom ctx xs -> MAtom (ctx :++: xs) ys -> MAtom (ctx :++: xs :++: ys) zs -> (xs :++: ys :++: zs) :~: (xs :++: (ys :++: zs))
 threeMConsAssocProof _ _ _ = unsafeCoerce Refl -- Todo: Write proof.
