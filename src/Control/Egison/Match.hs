@@ -89,7 +89,7 @@ processMState (MState rs (MCons (MAtom pat m tgt) atoms)) =
     OrPat p1 p2 ->
       [MState rs (MCons (MAtom p1 m tgt) atoms), MState rs (MCons (MAtom p2 m tgt) atoms)]
     NotPat p ->
-      [MState rs atoms | null $ processMStatesAll [[MState rs $ MCons (MAtom p m tgt) MNil]]]
+      [MState rs atoms | null $ processMStatesAllDFS [MState rs $ MCons (MAtom p m tgt) MNil]]
     PredicatePat f -> [MState rs atoms | f rs tgt]
 processMState (MState rs MNil) = undefined -- or [MState rs MNil] -- TODO: shold not reach here but reaches here.
 
