@@ -60,10 +60,8 @@ processMStatesAll streams = results ++ processMStatesAll streams'
     (results, streams') = foldr processMStates ([], []) streams
     processMStates :: [MState vs] -> ([HList vs], [[MState vs]]) -> ([HList vs], [[MState vs]])
     processMStates [] (results, acc) = (results, acc)
-    processMStates (mstate:ms) (results, acc) =
-      case processMState mstate of
-        MState rs MNil:[] -> (rs:results, ms:acc)
-        streams -> (results, streams:ms:acc)
+    processMStates (MState rs MNil:ms) (results, acc) = processMStates ms (rs:results, acc)
+    processMStates (mstate:ms) (results, acc) = (results, processMState mstate:ms:acc)
 
 {-# INLINE processMState #-}
 processMState :: MState vs -> [MState vs]
