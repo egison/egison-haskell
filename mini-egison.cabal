@@ -55,6 +55,8 @@ library
     , TypeOperators
     , FlexibleInstances
     , TupleSections
+    , Strict
+    , StrictData
   ghc-options:  -O3
   
 test-suite mini-egison-test

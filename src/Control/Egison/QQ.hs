@@ -161,5 +161,6 @@ changeExp vars expr = do
 
 -- \[x, y] -> HCons x (HCons y HNil)
 f :: [Name] -> Pat
-f []     = ConP 'HNil []
-f (x:xs) = InfixP (VarP x) 'HCons $ f xs
+f = foldr go $ ConP 'HNil []
+  where
+    go x acc = ConP 'HCons [VarP x, acc]
