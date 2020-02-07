@@ -55,22 +55,15 @@ processMStatesAllDFS (mstate:ms) = processMStatesAllDFS $ (processMState mstate)
 
 processMStatesAll :: [[MState vs]] -> [HList vs]
 processMStatesAll [] = []
-processMStatesAll streams =
-  case extractMatches $ concatMap processMStates streams of
-    ([], streams') -> processMStatesAll streams'
-    (results, streams') -> results ++ processMStatesAll streams'
-
-extractMatches :: [[MState vs]] -> ([HList vs], [[MState vs]])
-extractMatches = extractMatches' ([], [])
- where
-   extractMatches' :: ([HList vs], [[MState vs]]) -> [[MState vs]] -> ([HList vs], [[MState vs]])
-   extractMatches' (xs, ys) [] = (reverse xs,  reverse ys) -- These calls of the reverse function are very important for performance.
-   extractMatches' (xs, ys) ((MState rs MNil:[]):rest) = extractMatches' (rs:xs, ys) rest
-   extractMatches' (xs, ys) (stream:rest) = extractMatches' (xs, stream:ys) rest
-
-processMStates :: [MState vs] -> [[MState vs]]
-processMStates []          = []
-processMStates (mstate:ms) = [processMState mstate, ms]
+processMStatesAll streams = results ++ processMStatesAll streams'
+  where
+    (results, streams') = foldr processMStates ([], []) streams
+    processMStates :: [MState vs] -> ([HList vs], [[MState vs]]) -> ([HList vs], [[MState vs]])
+    processMStates [] (results, acc) = (results, acc)
+    processMStates (mstate:ms) (results, acc) =
+      case processMState mstate of
+        MState rs MNil:[] -> (rs:results, ms:acc)
+        streams -> (results, streams:ms:acc)
 
 {-# INLINE processMState #-}
 processMState :: MState vs -> [MState vs]
