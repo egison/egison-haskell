@@ -24,7 +24,7 @@ deleteLiteral l cnf =
 
 deleteClausesWith l cnf =
   matchAll cnf (Multiset (Multiset Literal))
-    [[mc| !(#l : _) & $c : _ -> c |]]
+    [[mc| (!(#l : _) & $c) : _ -> c |]]
 
 assignTrue l cnf =
   deleteLiteral (negate l) (deleteClausesWith l cnf)
