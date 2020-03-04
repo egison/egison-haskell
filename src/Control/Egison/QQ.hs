@@ -1,19 +1,58 @@
 -- | Quasiquotation for rewriting a match clause.
 
-module Control.Egison.QQ (
-  mc,
-  ) where
+module Control.Egison.QQ
+  ( mc
+  )
+where
 
 import           Control.Egison.Core
-import           Data.List
-import           Data.List.Split
-import           Data.Map                   (Map)
-import           Data.Maybe                 (fromMaybe)
-import           Language.Haskell.Meta
-import           Language.Haskell.TH        hiding (match)
-import           Language.Haskell.TH.Quote
-import           Language.Haskell.TH.Syntax
-import           Text.Regex
+import           Control.Monad.State            ( runState
+                                                , get
+                                                , modify
+                                                )
+import           Text.Read                      ( readMaybe )
+import           Data.Maybe                     ( mapMaybe )
+import           Data.List                      ( foldl' )
+import           Language.Haskell.TH            ( Q
+                                                , Loc(..)
+                                                , Exp(..)
+                                                , Pat(..)
+                                                , Lit(..)
+                                                , Name
+                                                , location
+                                                , extsEnabled
+                                                , mkName
+                                                , pprint
+                                                )
+import           Language.Haskell.TH.Quote      ( QuasiQuoter(..) )
+import qualified Language.Haskell.TH           as TH
+                                                ( Extension(..) )
+import           Language.Haskell.Exts.Extension
+                                                ( Extension(EnableExtension) )
+import           Language.Haskell.Exts.Parser   ( ParseResult(..)
+                                                , defaultParseMode
+                                                , parseExpWithMode
+                                                )
+import qualified Language.Haskell.Exts.Extension
+                                               as Exts
+                                                ( KnownExtension(..) )
+import qualified Language.Haskell.Exts.Parser  as Exts
+                                                ( ParseMode(..) )
+import           Language.Haskell.Meta.Syntax.Translate
+                                                ( toExp )
+import qualified Language.Egison.Syntax.Pattern
+                                               as Pat
+                                                ( Expr(..) )
+import qualified Language.Egison.Parser.Pattern
+                                               as Pat
+                                                ( parseNonGreedy )
+import           Language.Egison.Parser.Pattern ( Fixity(..)
+                                                , ParseFixity(..)
+                                                , Associativity(..)
+                                                , Precedence(..)
+                                                )
+import           Language.Egison.Parser.Pattern.Mode.Haskell.TH
+                                                ( ParseMode(..) )
 
 -- | A quasiquoter for rewriting a match clause.
 -- This quasiquoter is useful for generating a 'MatchClause' in user-friendly syntax.
@@ -55,7 +94,7 @@ import           Text.Regex
 -- 
 -- A match clause that contains an and-pattern
 -- 
--- > [mc| (& (cons _ _) $x) => x |]
+-- > [mc| (cons _ _) & $x => x |]
 -- 
 -- is rewritten to
 -- 
@@ -66,100 +105,133 @@ import           Text.Regex
 -- 
 -- A match clause that contains an or-pattern
 -- 
--- > [mc| (| nil (cons _ _)) => "Matched" |]
+-- > [mc| nil | (cons _ _) => "Matched" |]
 -- 
 -- is rewritten to
 -- 
 -- > MatchClause (OrPat nil (cons Wildcard Wildcard))
 -- >             (\HNil -> "Matched")
+--
+-- === Collection patterns
+--
+-- A collection pattern
+--
+-- > [p1, p2, ..., pn]
+--
+-- is desugared into
+--
+-- > p1 : p2 : ... : pn : nil
+--
+-- === Cons patterns
+--
+-- A pattern with special collection pattern operator @:@
+--
+-- > p1 : p2
+--
+-- is parsed as
+--
+-- > p1 `cons` p2
+--
+-- === Join patterns
+--
+-- A pattern with special collection pattern operator @++@
+--
+-- > p1 ++ p2
+--
+-- is parsed as
+--
+-- > p1 `join` p2
 mc :: QuasiQuoter
-mc = QuasiQuoter { quoteExp = \s -> do
-                      let [pat, exp] = splitOn "=>" s
-                      e1 <- case parseExp (changeNotPat (changeOrPat (changeAndPat (changeValuePat (changePatVar (changeWildcard pat)))))) of
-                              Left _ -> fail "Could not parse pattern expression."
-                              Right exp -> return exp
-                      e2 <- case parseExp exp of
-                                 Left _ -> fail "Could not parse expression."
-                                 Right exp -> return exp
-                      mcChange e1 e2
-                  , quotePat = undefined
-                  , quoteType = undefined
-                  , quoteDec = undefined }
+mc = QuasiQuoter { quoteExp  = compile
+                 , quotePat  = undefined
+                 , quoteType = undefined
+                 , quoteDec  = undefined
+                 }
 
-changeWildcard :: String -> String
-changeWildcard pat = subRegex (mkRegex " _") pat " Wildcard"
 
-changePatVar :: String -> String
-changePatVar pat = subRegex (mkRegex "\\$([a-zA-Z0-9]+)") pat "(PatVar \"\\1\")"
+listFixities :: [ParseFixity Name String]
+listFixities =
+  [ ParseFixity (Fixity AssocRight (Precedence 5) (mkName "join")) $ parser "++"
+  , ParseFixity (Fixity AssocRight (Precedence 5) (mkName "cons")) $ parser ":"
+  ]
+ where
+  parser symbol content | symbol == content = Right ()
+                        | otherwise = Left $ show symbol ++ "is expected"
 
-changeValuePat :: String -> String
-changeValuePat pat = subRegex (mkRegex "\\#(\\([^)]+\\)|\\[[^)]+\\]|[a-zA-Z0-9]+)") pat "(valuePat \\1)"
+parseMode :: Q Exts.ParseMode
+parseMode = do
+  Loc { loc_filename } <- location
+  extensions <- mapMaybe (fmap EnableExtension . convertExt) <$> extsEnabled
+  pure defaultParseMode { Exts.parseFilename = loc_filename, Exts.extensions }
+ where
+  convertExt :: TH.Extension -> Maybe Exts.KnownExtension
+  convertExt TH.TemplateHaskellQuotes = Just Exts.TemplateHaskell  -- haskell-suite/haskell-src-exts#357
+  convertExt ext                      = readMaybe $ show ext
 
-changeAndPat :: String -> String
-changeAndPat pat = subRegex (mkRegex "\\(\\&") pat "(AndPat"
+parseExp :: Exts.ParseMode -> String -> Q Exp
+parseExp mode content = case parseExpWithMode mode content of
+  ParseOk x       -> pure $ toExp x
+  ParseFailed _ e -> fail e
 
-changeOrPat :: String -> String
-changeOrPat pat = subRegex (mkRegex "\\(\\|") pat "(OrPat"
+compile :: String -> Q Exp
+compile content = do
+  mode        <- parseMode
+  (pat, rest) <- parsePatternExpr mode content
+  bodySource  <- takeBody rest
+  body        <- parseExp mode bodySource
+  pure $ compilePattern pat body
+ where
+  takeBody ('=' : '>' : xs) = pure xs
+  takeBody xs               = fail $ "\"=>\" is expected, but found " ++ show xs
 
-changeNotPat :: String -> String
-changeNotPat pat = subRegex (mkRegex "\\(not ") pat "(NotPat "
+parsePatternExpr
+  :: Exts.ParseMode -> String -> Q (Pat.Expr Name Name Exp, String)
+parsePatternExpr haskellMode content = case Pat.parseNonGreedy mode content of
+  Left  e -> fail $ show e
+  Right x -> pure x
+  where mode = ParseMode { haskellMode, fixities = Just listFixities }
 
-mcChange :: Exp -> Exp -> Q Exp
-mcChange pat expr = do
-  let (vars, xs) = extractPatVars [pat] []
-  [| (MatchClause $(fst <$> changePat pat (map (`take` vars) xs)) $(changeExp vars expr)) |]
-
--- extract patvars from pattern
-extractPatVars :: [Exp] -> [String] -> ([String], [Int])
-extractPatVars [] vars = (vars, [])
-extractPatVars (ParensE x:xs) vars = extractPatVars (x:xs) vars
-extractPatVars (AppE (ConE name) p:xs) vars
-  | nameBase name == "PatVar" = case p of (LitE (StringL s)) -> extractPatVars xs (vars ++ [s])
-  | nameBase name == "PredicatePat" = let (vs, ns) = extractPatVars xs vars in (vs, length vars:ns)
-  | nameBase name == "LaterPat" =
-      let (vs1, ns1) = extractPatVars xs vars in
-      let (vs2, ns2) = extractPatVars [p] vs1 in (vs2, ns2 ++ ns1)
-  | otherwise = extractPatVars (p:xs) vars
-extractPatVars (AppE (VarE name) p:xs) vars
-  | nameBase name == "valuePat" = let (vs, ns) = extractPatVars xs vars in (vs, length vars:ns)
-  | otherwise = extractPatVars (p:xs) vars
-extractPatVars (AppE a b:xs) vars = extractPatVars (a:b:xs) vars
-extractPatVars (SigE x typ:xs) vs = extractPatVars (x:xs) vs
-extractPatVars (_:xs) vars = extractPatVars xs vars
-
--- change ValuePat e to \(HCons x HNil) -> e
--- change PredicatePat (\x -> e) to \(HCons x HNil) -> (\x -> e)
-changePat :: Exp -> [[String]] -> Q (Exp, [[String]])
-changePat e@(AppE (ConE name) p) vs
-  | nameBase name == "PredicatePat" = do
-      let (vars:varss) = vs
-      (, varss) <$> appE (conE 'PredicatePat) (changeExp vars p)
-  | otherwise = do
-      (e', vs') <- changePat p vs
-      (, vs') <$> appE (conE name) (return e')
-changePat e@(AppE (VarE name) p) vs
-  | nameBase name == "valuePat" = do
-      let (vars:varss) = vs
-      (, varss) <$> appE (varE name) (changeExp vars p)
-  | otherwise = do
-      (e', vs') <- changePat p vs
-      (, vs') <$> appE (varE name) (return e')
-changePat (AppE e1 e2) vs = do
-  (e1', vs') <- changePat e1 vs
-  (e2', vs'') <- changePat e2 vs'
-  (, vs'') <$> appE (return e1') (return e2')
-changePat (ParensE x) vs = changePat x vs
-changePat (SigE x typ) vs = changePat x vs
-changePat e vs = return (e, vs)
-
--- change e to \(HCons x HNil) -> e
-changeExp :: [String] -> Exp -> Q Exp
-changeExp vars expr = do
-  vars' <- mapM newName vars
-  vars'' <- mapM (\s -> newName $ s ++ "'") vars
-  return $ LamE [f vars'] expr
-
--- \[x, y] -> HCons x (HCons y HNil)
-f :: [Name] -> Pat
-f []     = ConP 'HNil []
-f (x:xs) = InfixP (VarP x) 'HCons $ f xs
+compilePattern :: Pat.Expr Name Name Exp -> Exp -> Exp
+compilePattern pat body = AppE
+  (AppE (ConE 'Control.Egison.Core.MatchClause) clauseExp)
+  bodyExp
+ where
+  (clauseExp, bsAll) = runState (go pat) []
+  bodyExp            = bsFun bsAll body
+  bsFun bs = LamE [foldr (\x a -> ConP 'HCons [VarP x, a]) (ConP 'HNil []) bs]
+  go Pat.Wildcard     = pure $ ConE 'Control.Egison.Core.Wildcard
+  go (Pat.Variable v) = do
+    modify (<> [v])
+    pure . AppE (ConE 'Control.Egison.Core.PatVar) . LitE . StringL $ pprint v
+  go (Pat.Value e) = do
+    bs <- get
+    pure . AppE (VarE $ mkName "valuePat") $ bsFun bs e
+  go (Pat.Predicate e) = do
+    bs <- get
+    pure . AppE (ConE 'Control.Egison.Core.PredicatePat) $ bsFun bs e
+  go (Pat.And p1 p2) = do
+    e1 <- go p1
+    e2 <- go p2
+    pure $ AppE (AppE (ConE 'Control.Egison.Core.AndPat) e1) e2
+  go (Pat.Or p1 p2) = do
+    e1 <- go p1
+    e2 <- go p2
+    pure $ AppE (AppE (ConE 'Control.Egison.Core.OrPat) e1) e2
+  go (Pat.Not p1) = do
+    e1 <- go p1
+    pure $ AppE (ConE 'Control.Egison.Core.NotPat) e1
+  go (Pat.Tuple [p1, p2]) = do
+    e1 <- go p1
+    e2 <- go p2
+    pure $ AppE (AppE (VarE $ mkName "pair") e1) e2
+  go (Pat.Tuple _) = error "tuples other than pairs are not supported"
+  go (Pat.Collection ps) =
+    foldr (\e -> AppE (AppE (VarE $ mkName "cons") e)) (VarE $ mkName "nil")
+      <$> mapM go ps
+  go (Pat.Infix n p1 p2) = do
+    e1 <- go p1
+    e2 <- go p2
+    pure . ParensE $ UInfixE e1 (VarE n) e2
+  go (Pat.Pattern n ps) = do
+    es <- mapM go ps
+    pure $ foldl' AppE (VarE n) es
