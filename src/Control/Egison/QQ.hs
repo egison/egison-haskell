@@ -204,8 +204,8 @@ compilePattern pat body = AppE
   bodyExp
  where
   (clauseExp, bsAll) = runState (cataM go pat) []
-  bodyExp            = bsFun bsAll body
-  bsFun bs = LamE [foldr (\x a -> ConP 'HCons [VarP x, a]) (ConP 'HNil []) bs]
+  bsFun bs = LamE [toHListPat bs]
+  bodyExp = bsFun bsAll body
   go Pat.WildcardF     = pure $ ConE 'Control.Egison.Core.Wildcard
   go (Pat.VariableF v) = do
     modify (<> [v])
@@ -223,12 +223,16 @@ compilePattern pat body = AppE
   go (Pat.NotF e1) = pure $ AppE (ConE 'Control.Egison.Core.NotPat) e1
   go (Pat.TupleF [e1, e2]) = pure $ AppE (AppE (VarE $ mkName "pair") e1) e2
   go (Pat.TupleF _) = error "tuples other than pairs are not supported"
-  go (Pat.CollectionF es) = pure $ foldr
-    (\e -> AppE (AppE (VarE $ mkName "cons") e))
-    (VarE $ mkName "nil")
-    es
+  go (Pat.CollectionF es) = pure $ toNilCons es
   go (Pat.InfixF n e1 e2) = pure . ParensE $ UInfixE e1 (VarE n) e2
-  go (Pat.PatternF n es ) = pure $ foldl' AppE (VarE n) es
+  go (Pat.PatternF n es) = pure $ foldl' AppE (VarE n) es
+
+toHListPat :: [Name] -> Pat
+toHListPat = foldr go $ ConP 'HNil [] where go x a = ConP 'HCons [VarP x, a]
+
+toNilCons :: [Exp] -> Exp
+toNilCons = foldr go . VarE $ mkName "nil"
+  where go e = AppE (AppE (VarE $ mkName "cons") e)
 
 cataM
   :: (Recursive t, Traversable (Base t), Monad m)
