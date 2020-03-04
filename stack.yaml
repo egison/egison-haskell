@@ -1,0 +1,7 @@
+resolver: lts-15.1
+extra-deps:
+  - egison-pattern-src-0.2.1.0@sha256:8f4e72f25abb4f6cf8f1283774ae0d5030c44dad32838de2423c8f9644529c78
+  - egison-pattern-src-th-mode-0.2.1.0@sha256:89d98f2660f7afa3abf27cbe43242b80a7af45db6b8032dd1cf7f390458305d5
+
+packages:
+- .
