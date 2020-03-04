@@ -19,47 +19,47 @@ instance Integral a => ValuePat Literal a where
 
 deleteLiteral l cnf =
   map (\c -> matchAll c (Multiset Literal)
-               [[mc| cons (& (not #l) $m) _ => m |]])
+               [[mc| (!#l & $m) : _ -> m |]])
       cnf
 
 deleteClausesWith l cnf =
   matchAll cnf (Multiset (Multiset Literal))
-    [[mc| cons (& (not (cons #l _)) $c) _ => c |]]
+    [[mc| !(#l : _) & $c : _ -> c |]]
 
 assignTrue l cnf =
   deleteLiteral (negate l) (deleteClausesWith l cnf)
 
 tautology c =
   match c (Multiset Literal)
-    [[mc| cons $l (cons #(negate l) _) => True |],
-     [mc| _ => False |]]
+    [[mc| $l : #(negate l) : _ -> True |],
+     [mc| _ -> False |]]
 
 resolveOn v cnf =
   filter (\c -> not (tautology c))
          (matchAll cnf (Multiset (Multiset Literal))
-            [[mc| cons (cons #v $xs)
-                   (cons (cons #(negate v) $ys)
-                    _) =>
+            [[mc| (#v : $xs) :
+                   (#(negate v) : $ys) :
+                    _ ->
                   nub (xs ++ ys) |]])
 
 dp :: [Integer] -> [[Integer]] -> Bool
 dp vars cnf =
   match (vars, cnf) (Pair (Multiset Literal) (Multiset (Multiset Literal)))
     [-- satisfiable
-     [mc| (pair _ nil) => True |],
+     [mc| (_, []) -> True |],
      -- unsatisfiable
-     [mc| (pair _ (cons nil _)) => False |],
+     [mc| (_, [] : _) -> False |],
      -- 1-literal rule
-     [mc| (pair _ (cons (cons $l nil) _)) =>
+     [mc| (_, ($l : []) : _) ->
             dp (delete (abs l) vars) (assignTrue l cnf) |],
      -- pure literal rule (positive)
-     [mc| (pair (cons $v $vs) (not (cons (cons #v _) _))) =>
+     [mc| ($v : $vs, !((#v : _) : _)) ->
             dp vs (assignTrue v cnf) |],
      -- pure literal rule (negative)
-     [mc| (pair (cons $v $vs) (not (cons (cons #(negate v) _) _))) =>
+     [mc| ($v : $vs, !((#(negate v) : _) : _)) ->
             dp vs (assignTrue (negate v) cnf) |],
      -- otherwise
-     [mc| (pair (cons $v $vs) _) =>
+     [mc| ($v : $vs, _) ->
             dp vs (resolveOn v cnf ++
                    deleteClausesWith v (deleteClausesWith (negate v) cnf)) |]]
 

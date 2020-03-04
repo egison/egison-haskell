@@ -38,5 +38,5 @@ main = do
   putStrLn $ show $ f t2 -- [0]
  where
    f t = matchAll t (TreeM Eql)
-           [[mc| nodePat $x _ _ => x |],
-            [mc| leafPat => 0 |]]
+           [[mc| nodePat $x _ _ -> x |],
+            [mc| leafPat -> 0 |]]
