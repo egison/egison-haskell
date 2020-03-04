@@ -20,14 +20,18 @@ e = hs-expr                    -- arbitrary Haskell expression
   | matchDFS e e [C, ...]      -- match expression
   | Something                  -- Something built-in matcher
 
-C = [mc| p => e |]             -- match clause
+C = [mc| p -> e |]             -- match clause
 
-p = _                          -- wildcard
-  | $x                         -- pattern variable
-  | #e                         -- value pattern
-  | (& p ...)                  -- and-pattern
-  | (| p ...)                  -- or-pattern
-  | (not p)                    -- not-pattern
+p ::= _                     -- wildcard pattern
+    | $v                    -- pattern variable
+    | #e                    -- value pattern
+    | ?e                    -- predicate pattern
+    | (p_1, p_2, ..., p_n)  -- tuple pattern
+    | [p_1, p_2, ..., p_n]  -- collection pattern
+    | p & p                 -- and-pattern
+    | p | p                 -- or-pattern
+    | !p                    -- not-pattern
+    | c p_1 p_2 ... p_n     -- constructor pattern
 ```
 
 ## Usage
@@ -39,7 +43,7 @@ The expression below pattern-matches a target `[1,2,3]` as a list of integers wi
 This expression returns a list of a single element because there is only one decomposition.
 
 ```
-matchAll [1,2,3] (List Integer) [[mc| cons $x $xs => (x, xs)|]]
+matchAll [1,2,3] (List Integer) [[mc| $x : $xs -> (x, xs)|]]
 -- [(1,[2,3])]
 ```
 
@@ -51,11 +55,11 @@ We can change a way to interpret a pattern by changing a matcher.
 For example, by changing the matcher of the above `matchAll` from `List Integer` to `Multiset Integer`, the evaluation result changes as follows:
 
 ```
-matchAll [1,2,3] (Multiset Integer) [[mc| cons $x $xs => (x, xs)|]]
+matchAll [1,2,3] (Multiset Integer) [[mc| $x : $xs -> (x, xs)|]]
 -- [(1,[2,3]),(2,[1,3]),(3,[1,2])]
 ```
 
-When the `Multiset` matcher is used, the `cons` pattern decomposes a target list into an element and the rest elements.
+When the `Multiset` matcher is used, `:` (the cons pattern) decomposes a target list into an element and the rest elements.
 
 The pattern-matching algorithms for each matcher can be defined by users.
 For example, the matchers such as `List` and `Multiset` can be defined by users.
@@ -72,7 +76,7 @@ For example, the program below pattern-matches a list `[1,2,5,9,4]` as a multise
 A non-linear pattern is effectively used for expressing the pattern.
 
 ```
-matchAll [1,2,5,9,4] (Multiset Integer) [[mc| cons $x (cons #(x+1) _) => x|]]
+matchAll [1,2,5,9,4] (Multiset Integer) [[mc| $x :#(x+1) : _ -> x|]]
 -- [1,4]
 ```
 
@@ -82,7 +86,7 @@ The `match` expression takes a target, a matcher, and match-clauses as the `matc
 The `match` expression returns only the evaluation result of the first pattern-matching result.
 
 ```
-match [1,2,5,9,4] (Multiset Integer) [[mc| cons $x (cons #(x+1) _) => x|]]
+match [1,2,5,9,4] (Multiset Integer) [[mc| $x :#(x+1) : _ -> x|]]
 -- 1
 ```
 
@@ -100,7 +104,7 @@ For example, all the pairs of natural numbers can be enumerated by the following
 
 ```
 take 10 (matchAll [1..] (Set Integer)
-           [[mc| cons $x (cons $y _) => (x, y) |]])
+           [[mc| $x : $y : _ -> (x, y) |]])
 -- [(1,1),(1,2),(2,1),(1,3),(2,2),(3,1),(1,4),(2,3),(3,2),(4,1)]
 ```
 
@@ -108,7 +112,7 @@ If we change the above `matchAll` to `matchAllDFS`, the order of the pattern-mat
 
 ```
 take 10 (matchAllDFS [1..] (Set Integer)
-           [[mc| cons $x (cons $y _) => (x, y) |]])
+           [[mc| $x : $y : _ -> (x, y) |]])
 -- [(1,1),(1,2),(1,3),(1,4),(1,5),(1,6),(1,7),(1,8),(1,9),(1,10)]
 ```
 
@@ -123,10 +127,10 @@ The users can define pattern-matching algorithms for each pattern by themselves.
 preparing...
 
 ```
-matchAll (1,2) UnorderedEqlPair [[mc| uepair $x $y => (x,y) |]]
+matchAll (1,2) UnorderedEqlPair [[mc| uepair $x $y -> (x,y) |]]
 -- [(1,2),(2,1)]
 
-matchAll (1,2) UnorderedEqlPair [[mc| uepair #2 $x => x |]]
+matchAll (1,2) UnorderedEqlPair [[mc| uepair #2 $x -> x |]]
 -- [1]
 ```
 
@@ -136,7 +140,7 @@ preparing...
 
 ```
 data UnorderedEqlPair = UnorderedEqlPair
-instance (Eq a) => Matcher UnorderedEqlPair (a, a)
+instance (Eq a) -> Matcher UnorderedEqlPair (a, a)
 
 uepair :: (Eq a)
        => Pattern a Eql ctx xs
@@ -176,7 +180,7 @@ We can extract all twin primes from the list of prime numbers by pattern matchin
 
 ```
 take 10 (matchAll primes (List Integer)
-           [[mc| join _ (cons $p (cons #(p+2) _)) => (p, p+2) |]])
+           [[mc| _ ++ $p : #(p+2) : _ -> (p, p+2) |]])
 -- [(3,5),(5,7),(11,13),(17,19),(29,31),(41,43),(59,61),(71,73),(101,103),(107,109)]
 ```
 
@@ -184,7 +188,7 @@ It is also possible to enumerate all the pairs of prime numbers whose form is (p
 
 ```
 take 10 (matchAll primes (List Integer)
-           [[mc| join _ (cons $p (join _ (cons #(p+6) _))) => (p, p+6) |]])
+           [[mc| _ ++ $p : _ ++ #(p+6) : _ -> (p, p+6) |]])
 -- [(5,11),(7,13),(11,17),(13,19),(17,23),(23,29),(31,37),(37,43),(41,47),(47,53)]
 ```
 
@@ -193,55 +197,55 @@ take 10 (matchAll primes (List Integer)
 ```
 poker cs =
   match cs (Multiset CardM)
-    [[mc| cons (card $s $n)
-           (cons (card #s #(n-1))
-            (cons (card #s #(n-2))
-             (cons (card #s #(n-3))
-              (cons (card #s #(n-4))
-               _)))) => "Straight flush" |],
-     [mc| cons (card _ $n)
-           (cons (card _ #n)
-            (cons (card _ #n)
-             (cons (card _ #n)
-              (cons _
-               _)))) => "Four of a kind" |],
-     [mc| cons (card _ $m)
-           (cons (card _ #m)
-            (cons (card _ #m)
-             (cons (card _ $n)
-              (cons (card _ #n)
-                _)))) => "Full house" |],
-     [mc| cons (card $s _)
-           (cons (card #s _)
-            (cons (card #s _)
-             (cons (card #s _)
-              (cons (card #s _)
-               _)))) => "Flush" |],
-     [mc| cons (card _ $n)
-           (cons (card _ #(n-1))
-            (cons (card _ #(n-2))
-             (cons (card _ #(n-3))
-              (cons (card _ #(n-4))
-               _)))) => "Straight" |],
-     [mc| cons (card _ $n)
-           (cons (card _ #n)
-            (cons (card _ #n)
-             (cons _
-              (cons _
-               _)))) => "Three of a kind" |],
-     [mc| cons (card _ $m)
-           (cons (card _ #m)
-            (cons (card _ $n)
-             (cons (card _ #n)
-              (cons _
-                _)))) => "Two pair" |],
-     [mc| cons (card _ $n)
-           (cons (card _ #n)
-            (cons _
-             (cons _
-              (cons _
-               _)))) => "One pair" |],
-     [mc| _ => "Nothing" |]]
+    [[mc| card $s $n :
+           card #s #(n-1) :
+            card #s #(n-2) :
+             card #s #(n-3) :
+              card #s #(n-4) :
+               [] -> "Straight flush" |],
+     [mc| card _ $n :
+           card _ #n :
+            card _ #n :
+             card _ #n :
+              _ :
+               [] -> "Four of a kind" |],
+     [mc| card _ $m :
+           card _ #m :
+            card _ #m :
+             card _ $n :
+              card _ #n :
+               [] -> "Full house" |],
+     [mc| card $s _ :
+           card #s _ :
+            card #s _ :
+             card #s _ :
+              card #s _ :
+               [] -> "Flush" |],
+     [mc| card _ $n :
+           card _ #(n-1) :
+            card _ #(n-2) :
+             card _ #(n-3) :
+              card _ #(n-4) :
+               [] -> "Straight" |],
+     [mc| card _ $n :
+           card _ #n :
+            card _ #n :
+             _ :
+              _ :
+               [] -> "Three of a kind" |],
+     [mc| card _ $m :
+           card _ #m :
+            card _ $n :
+             card _ #n :
+              _ :
+               [] -> "Two pair" |],
+     [mc| card _ $n :
+           card _ #n :
+            _ :
+             _ :
+              _ :
+               [] -> "One pair" |],
+     [mc| _ -> "Nothing" |]]
 ```
 
 ## Benchmark
@@ -261,7 +265,7 @@ main :: IO ()
 main = do
   let n = 100
   let ans = take n (matchAll primes (List Integer)
-                     [[mc| join _ (cons $p (cons #(p+2) _)) => (p, p+2) |]])
+                     [[mc| _ ++ $p : #(p+2) : _ -> (p, p+2) |]])
   putStrLn $ show ans
 $ stack ghc -- benchmark/prime-pairs-2.hs
 $ time ./benchmark/prime-pairs-2
