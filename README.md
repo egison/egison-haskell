@@ -13,25 +13,25 @@ The design of the pattern-matching facility is originally proposed in [this pape
 This library provides two syntax constructs, `matchAll`, `match`, `matchAllDFS`, and `matchDFS` for advanced pattern matching for non-free data types.
 
 ```
-e = hs-expr                    -- arbitrary Haskell expression
-  | matchAll e e [C, ...]      -- match-all expression
-  | match e e [C, ...]         -- match expression
-  | matchAllDFS e e [C, ...]   -- match-all expression
-  | matchDFS e e [C, ...]      -- match expression
-  | Something                  -- Something built-in matcher
+e ::= hs-expr                    -- arbitrary Haskell expression
+    | matchAll e e [C, ...]      -- match-all expression
+    | match e e [C, ...]         -- match expression
+    | matchAllDFS e e [C, ...]   -- match-all expression
+    | matchDFS e e [C, ...]      -- match expression
+    | Something                  -- Something built-in matcher
 
-C = [mc| p -> e |]             -- match clause
+C ::= [mc| p -> e |]             -- match clause
 
-p ::= _                     -- wildcard pattern
-    | $v                    -- pattern variable
-    | #e                    -- value pattern
-    | ?e                    -- predicate pattern
-    | (p_1, p_2, ..., p_n)  -- tuple pattern
-    | [p_1, p_2, ..., p_n]  -- collection pattern
-    | p & p                 -- and-pattern
-    | p | p                 -- or-pattern
-    | !p                    -- not-pattern
-    | c p_1 p_2 ... p_n     -- constructor pattern
+p ::= _                          -- wildcard pattern
+    | $v                         -- pattern variable
+    | #e                         -- value pattern
+    | ?e                         -- predicate pattern
+    | (p_1, p_2, ..., p_n)       -- tuple pattern
+    | [p_1, p_2, ..., p_n]       -- collection pattern
+    | p & p                      -- and-pattern
+    | p | p                      -- or-pattern
+    | !p                         -- not-pattern
+    | c p_1 p_2 ... p_n          -- constructor pattern
 ```
 
 ## Usage
@@ -76,7 +76,7 @@ For example, the program below pattern-matches a list `[1,2,5,9,4]` as a multise
 A non-linear pattern is effectively used for expressing the pattern.
 
 ```
-matchAll [1,2,5,9,4] (Multiset Integer) [[mc| $x :#(x+1) : _ -> x|]]
+matchAll [1,2,5,9,4] (Multiset Integer) [[mc| $x : #(x+1) : _ -> x|]]
 -- [1,4]
 ```
 
@@ -86,7 +86,7 @@ The `match` expression takes a target, a matcher, and match-clauses as the `matc
 The `match` expression returns only the evaluation result of the first pattern-matching result.
 
 ```
-match [1,2,5,9,4] (Multiset Integer) [[mc| $x :#(x+1) : _ -> x|]]
+match [1,2,5,9,4] (Multiset Integer) [[mc| $x : #(x+1) : _ -> x|]]
 -- 1
 ```
 
