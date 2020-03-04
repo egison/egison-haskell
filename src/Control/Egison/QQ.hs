@@ -7,9 +7,10 @@ where
 
 import           Control.Egison.Core
 import           Control.Monad                  ( (<=<) )
-import           Control.Monad.State            ( runState
-                                                , get
+import           Control.Monad.State            ( runStateT
+                                                , MonadState(..)
                                                 , modify
+                                                , lift
                                                 )
 import           Text.Read                      ( readMaybe )
 import           Data.Maybe                     ( mapMaybe )
@@ -186,7 +187,7 @@ compile content = do
   (pat, rest) <- parsePatternExpr mode content
   bodySource  <- takeBody rest
   body        <- parseExp mode bodySource
-  pure $ compilePattern pat body
+  compilePattern pat body
  where
   takeBody ('-' : '>' : xs) = pure xs
   takeBody xs               = fail $ "\"->\" is expected, but found " ++ show xs
@@ -198,14 +199,13 @@ parsePatternExpr haskellMode content = case Pat.parseNonGreedy mode content of
   Right x -> pure x
   where mode = ParseMode { haskellMode, fixities = Just listFixities }
 
-compilePattern :: Pat.Expr Name Name Exp -> Exp -> Exp
-compilePattern pat body = AppE
-  (AppE (ConE 'Control.Egison.Core.MatchClause) clauseExp)
-  bodyExp
+compilePattern :: Pat.Expr Name Name Exp -> Exp -> Q Exp
+compilePattern pat body = do
+  (clauseExp, bindings) <- runStateT (cataM go pat) []
+  let bodyExp = bsFun bindings body
+  pure $ AppE (AppE (ConE 'Control.Egison.Core.MatchClause) clauseExp) bodyExp
  where
-  (clauseExp, bsAll) = runState (cataM go pat) []
   bsFun bs = LamE [toHListPat bs]
-  bodyExp = bsFun bsAll body
   go Pat.WildcardF     = pure $ ConE 'Control.Egison.Core.Wildcard
   go (Pat.VariableF v) = do
     modify (<> [v])
@@ -222,7 +222,7 @@ compilePattern pat body = AppE
     pure $ AppE (AppE (ConE 'Control.Egison.Core.OrPat) e1) e2
   go (Pat.NotF e1) = pure $ AppE (ConE 'Control.Egison.Core.NotPat) e1
   go (Pat.TupleF [e1, e2]) = pure $ AppE (AppE (VarE $ mkName "pair") e1) e2
-  go (Pat.TupleF _) = error "tuples other than pairs are not supported"
+  go (Pat.TupleF _) = lift $ fail "tuples other than pairs are not supported"
   go (Pat.CollectionF es) = pure $ toNilCons es
   go (Pat.InfixF n e1 e2) = pure . ParensE $ UInfixE e1 (VarE n) e2
   go (Pat.PatternF n es) = pure $ foldl' AppE (VarE n) es
