@@ -8,7 +8,7 @@ import qualified Control.Egison as M
 
 main = do
   putStrLn $ show $ matchAll [1,2,3,5] (Multiset Eql)
-                      [[mc| cons $x (cons $y (cons #(x + 1) (cons $z nil))) => (x, y, z) |]]
+                      [[mc| [$x, $y, #(x + 1), $z] -> (x, y, z) |]]
 -- [(1,3,5),(2,1,5),(1,5,3),(2,5,1)]
   putStrLn $ show $ matchAll [1,2,3,5] (Multiset Eql)
-                      [[mc| cons $x (cons $y (cons #(x + 1) (cons #(not x) nil))) => (x, y) |]]
+                      [[mc| [$x, $y, #(x + 1), #(not x)] -> (x, y) |]]

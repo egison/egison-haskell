@@ -19,55 +19,55 @@ card p1 p2 = Pattern (\_ _ (Card s n) -> [twoMAtoms (MAtom p1 Eql s) (MAtom p2 M
 
 poker cs =
   match cs (Multiset CardM)
-    [[mc| cons (card $s $n)
-           (cons (card #s #(n-1))
-            (cons (card #s #(n-2))
-             (cons (card #s #(n-3))
-              (cons (card #s #(n-4))
-               _)))) => "Straight flush" |],
-     [mc| cons (card _ $n)
-           (cons (card _ #n)
-            (cons (card _ #n)
-             (cons (card _ #n)
-              (cons _
-               _)))) => "Four of a kind" |],
-     [mc| cons (card _ $m)
-           (cons (card _ #m)
-            (cons (card _ #m)
-             (cons (card _ $n)
-              (cons (card _ #n)
-                _)))) => "Full house" |],
-     [mc| cons (card $s _)
-           (cons (card #s _)
-            (cons (card #s _)
-             (cons (card #s _)
-              (cons (card #s _)
-               _)))) => "Flush" |],
-     [mc| cons (card _ $n)
-           (cons (card _ #(n-1))
-            (cons (card _ #(n-2))
-             (cons (card _ #(n-3))
-              (cons (card _ #(n-4))
-               _)))) => "Straight" |],
-     [mc| cons (card _ $n)
-           (cons (card _ #n)
-            (cons (card _ #n)
-             (cons _
-              (cons _
-               _)))) => "Three of a kind" |],
-     [mc| cons (card _ $m)
-           (cons (card _ #m)
-            (cons (card _ $n)
-             (cons (card _ #n)
-              (cons _
-                _)))) => "Two pair" |],
-     [mc| cons (card _ $n)
-           (cons (card _ #n)
-            (cons _
-             (cons _
-              (cons _
-               _)))) => "One pair" |],
-     [mc| _ => "Nothing" |]]
+    [[mc| card $s $n :
+           card #s #(n-1) :
+            card #s #(n-2) :
+             card #s #(n-3) :
+              card #s #(n-4) :
+               _ -> "Straight flush" |],
+     [mc| card _ $n :
+           card _ #n :
+            card _ #n :
+             card _ #n :
+              _ :
+               _ -> "Four of a kind" |],
+     [mc| card _ $m :
+           card _ #m :
+            card _ #m :
+             card _ $n :
+              card _ #n :
+                _ -> "Full house" |],
+     [mc| card $s _ :
+           card #s _ :
+            card #s _ :
+             card #s _ :
+              card #s _ :
+               _ -> "Flush" |],
+     [mc| card _ $n :
+           card _ #(n-1) :
+            card _ #(n-2) :
+             card _ #(n-3) :
+              card _ #(n-4) :
+               _ -> "Straight" |],
+     [mc| card _ $n :
+           card _ #n :
+            card _ #n :
+             _ :
+              _ :
+               _ -> "Three of a kind" |],
+     [mc| card _ $m :
+           card _ #m :
+            card _ $n :
+             card _ #n :
+              _ :
+               _ -> "Two pair" |],
+     [mc| card _ $n :
+           card _ #n :
+            _ :
+             _ :
+              _ :
+               _ -> "One pair" |],
+     [mc| _ -> "Nothing" |]]
 
 main :: IO ()
 main = do
