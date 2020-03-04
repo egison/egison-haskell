@@ -6,6 +6,7 @@ module Control.Egison.QQ
 where
 
 import           Control.Egison.Core
+import           Control.Monad                  ( (<=<) )
 import           Control.Monad.State            ( runState
                                                 , get
                                                 , modify
@@ -13,6 +14,10 @@ import           Control.Monad.State            ( runState
 import           Text.Read                      ( readMaybe )
 import           Data.Maybe                     ( mapMaybe )
 import           Data.List                      ( foldl' )
+import           Data.Functor.Foldable          ( Recursive
+                                                , Base
+                                                , cata
+                                                )
 import           Language.Haskell.TH            ( Q
                                                 , Loc(..)
                                                 , Exp(..)
@@ -42,7 +47,9 @@ import           Language.Haskell.Meta.Syntax.Translate
                                                 ( toExp )
 import qualified Language.Egison.Syntax.Pattern
                                                as Pat
-                                                ( Expr(..) )
+                                                ( Expr
+                                                , ExprF(..)
+                                                )
 import qualified Language.Egison.Parser.Pattern
                                                as Pat
                                                 ( parseNonGreedy )
@@ -196,42 +203,36 @@ compilePattern pat body = AppE
   (AppE (ConE 'Control.Egison.Core.MatchClause) clauseExp)
   bodyExp
  where
-  (clauseExp, bsAll) = runState (go pat) []
+  (clauseExp, bsAll) = runState (cataM go pat) []
   bodyExp            = bsFun bsAll body
   bsFun bs = LamE [foldr (\x a -> ConP 'HCons [VarP x, a]) (ConP 'HNil []) bs]
-  go Pat.Wildcard     = pure $ ConE 'Control.Egison.Core.Wildcard
-  go (Pat.Variable v) = do
+  go Pat.WildcardF     = pure $ ConE 'Control.Egison.Core.Wildcard
+  go (Pat.VariableF v) = do
     modify (<> [v])
     pure . AppE (ConE 'Control.Egison.Core.PatVar) . LitE . StringL $ pprint v
-  go (Pat.Value e) = do
+  go (Pat.ValueF e) = do
     bs <- get
     pure . AppE (VarE $ mkName "valuePat") $ bsFun bs e
-  go (Pat.Predicate e) = do
+  go (Pat.PredicateF e) = do
     bs <- get
     pure . AppE (ConE 'Control.Egison.Core.PredicatePat) $ bsFun bs e
-  go (Pat.And p1 p2) = do
-    e1 <- go p1
-    e2 <- go p2
+  go (Pat.AndF e1 e2) =
     pure $ AppE (AppE (ConE 'Control.Egison.Core.AndPat) e1) e2
-  go (Pat.Or p1 p2) = do
-    e1 <- go p1
-    e2 <- go p2
+  go (Pat.OrF e1 e2) =
     pure $ AppE (AppE (ConE 'Control.Egison.Core.OrPat) e1) e2
-  go (Pat.Not p1) = do
-    e1 <- go p1
-    pure $ AppE (ConE 'Control.Egison.Core.NotPat) e1
-  go (Pat.Tuple [p1, p2]) = do
-    e1 <- go p1
-    e2 <- go p2
-    pure $ AppE (AppE (VarE $ mkName "pair") e1) e2
-  go (Pat.Tuple _) = error "tuples other than pairs are not supported"
-  go (Pat.Collection ps) =
-    foldr (\e -> AppE (AppE (VarE $ mkName "cons") e)) (VarE $ mkName "nil")
-      <$> mapM go ps
-  go (Pat.Infix n p1 p2) = do
-    e1 <- go p1
-    e2 <- go p2
-    pure . ParensE $ UInfixE e1 (VarE n) e2
-  go (Pat.Pattern n ps) = do
-    es <- mapM go ps
-    pure $ foldl' AppE (VarE n) es
+  go (Pat.NotF e1) = pure $ AppE (ConE 'Control.Egison.Core.NotPat) e1
+  go (Pat.TupleF [e1, e2]) = pure $ AppE (AppE (VarE $ mkName "pair") e1) e2
+  go (Pat.TupleF _) = error "tuples other than pairs are not supported"
+  go (Pat.CollectionF es) = pure $ foldr
+    (\e -> AppE (AppE (VarE $ mkName "cons") e))
+    (VarE $ mkName "nil")
+    es
+  go (Pat.InfixF n e1 e2) = pure . ParensE $ UInfixE e1 (VarE n) e2
+  go (Pat.PatternF n es ) = pure $ foldl' AppE (VarE n) es
+
+cataM
+  :: (Recursive t, Traversable (Base t), Monad m)
+  => (Base t a -> m a)
+  -> t
+  -> m a
+cataM alg = cata (alg <=< sequence)

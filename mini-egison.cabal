@@ -39,6 +39,7 @@ library
   build-depends:
       base >=4.7 && <5
     , mtl
+    , recursion-schemes
     , haskell-src-exts
     , haskell-src-meta
     , template-haskell
