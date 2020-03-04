@@ -46,5 +46,5 @@ upair p1 p2 = Pattern (\_ (UnorderedPair m') (t1, t2) ->
 main :: IO ()
 main = do
   let t1 = (1,2)
-  putStrLn $ show $ matchAll t1 UnorderedEqlPair [[mc| uepair #2 $x => x |]]
-  putStrLn $ show $ matchAll t1 (UnorderedPair Eql) [[mc| upair #2 $x => x |]]
+  putStrLn $ show $ matchAll t1 UnorderedEqlPair [[mc| uepair #2 $x -> x |]]
+  putStrLn $ show $ matchAll t1 (UnorderedPair Eql) [[mc| upair #2 $x -> x |]]
