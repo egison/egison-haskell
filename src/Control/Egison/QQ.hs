@@ -181,8 +181,8 @@ compile content = do
   body        <- parseExp mode bodySource
   pure $ compilePattern pat body
  where
-  takeBody ('=' : '>' : xs) = pure xs
-  takeBody xs               = fail $ "\"=>\" is expected, but found " ++ show xs
+  takeBody ('-' : '>' : xs) = pure xs
+  takeBody xs               = fail $ "\"->\" is expected, but found " ++ show xs
 
 parsePatternExpr
   :: Exts.ParseMode -> String -> Q (Pat.Expr Name Name Exp, String)

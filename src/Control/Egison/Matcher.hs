@@ -93,9 +93,9 @@ instance (Matcher m a) => Matcher (List m) [a]
 instance (Matcher m a, Eq a, ValuePat m a) => ValuePat (List m) [a] where
   valuePat f = Pattern (\ctx (List m) tgt ->
                             match (f ctx, tgt) (Pair (List m) (List m)) $
-                              [[mc| ([], []) => [MNil] |],
-                               [mc| (($x : $xs), (#x : #xs)) => [MNil] |],
-                               [mc| _ => [] |]])
+                              [[mc| ([], []) -> [MNil] |],
+                               [mc| (($x : $xs), (#x : #xs)) -> [MNil] |],
+                               [mc| _ -> [] |]])
 
 instance Matcher m a => CollectionPat (List m) [a] where
   nil = Pattern (\_ _ t -> [MNil | null t])
@@ -118,16 +118,16 @@ instance (Matcher m a) => Matcher (Multiset m) [a]
 instance (Matcher m a, Eq a, ValuePat m a) => ValuePat (Multiset m) [a] where
   valuePat f = Pattern (\ctx (Multiset m) tgt ->
                             match (f ctx, tgt) (Pair (List m) (Multiset m)) $
-                              [[mc| ([], []) => [MNil] |],
-                               [mc| (($x : $xs), (#x : #xs)) => [MNil] |],
-                               [mc| _ => [] |]])
+                              [[mc| ([], []) -> [MNil] |],
+                               [mc| (($x : $xs), (#x : #xs)) -> [MNil] |],
+                               [mc| _ -> [] |]])
 
 instance (Matcher m a) => CollectionPat (Multiset m) [a] where
   nil = Pattern (\_ _ tgt -> [MNil | null tgt])
   -- | The @cons@ pattern for a multiset decomposes a collection into an arbitrary element and the rest elements.
   cons p Wildcard = Pattern (\_ (Multiset m) tgt -> map (\x -> oneMAtom (MAtom p m x)) tgt)
   cons p1 p2 = Pattern (\_ (Multiset m) tgt -> map (\(x, xs) -> twoMAtoms (MAtom p1 m x) (MAtom p2 (Multiset m) xs))
-                                                   (matchAll tgt (List m) [[mc| $hs ++ $x : $ts => (x, hs ++ ts) |]]))
+                                                   (matchAll tgt (List m) [[mc| $hs ++ $x : $ts -> (x, hs ++ ts) |]]))
   join p1 p2 = undefined
 
 -- | A matcher for a set. Both the order and the repetition of elements are ignored.
@@ -141,5 +141,5 @@ instance Matcher m a => CollectionPat (Set m) [a] where
   nil = Pattern (\_ _ tgt -> [MNil | null tgt])
   cons p1 p2 = Pattern (\_ (Set m) tgt ->
                   map (\x -> twoMAtoms (MAtom p1 m x) (MAtom p2 (Set m) tgt))
-                      (matchAll tgt (List m) [[mc| _ ++ $x : _ => x |]]))
+                      (matchAll tgt (List m) [[mc| _ ++ $x : _ -> x |]]))
   join p1 p2 = undefined
