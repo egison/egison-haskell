@@ -42,7 +42,7 @@ The `matchAll` expression evaluates the body of the match clause for all the pat
 The expression below pattern-matches a target `[1,2,3]` as a list of integers with a pattern `cons $x $xs`.
 This expression returns a list of a single element because there is only one decomposition.
 
-```
+```hs
 matchAll [1,2,3] (List Integer) [[mc| $x : $xs -> (x, xs)|]]
 -- [(1,[2,3])]
 ```
@@ -54,7 +54,7 @@ We can change a way to interpret a pattern by changing a matcher.
 
 For example, by changing the matcher of the above `matchAll` from `List Integer` to `Multiset Integer`, the evaluation result changes as follows:
 
-```
+```hs
 matchAll [1,2,3] (Multiset Integer) [[mc| $x : $xs -> (x, xs)|]]
 -- [(1,[2,3]),(2,[1,3]),(3,[1,2])]
 ```
@@ -75,7 +75,7 @@ Non-linear patterns are patterns that allow multiple occurrences of the same pat
 For example, the program below pattern-matches a list `[1,2,5,9,4]` as a multiset and extracts pairs of sequential elements.
 A non-linear pattern is effectively used for expressing the pattern.
 
-```
+```hs
 matchAll [1,2,5,9,4] (Multiset Integer) [[mc| $x : #(x+1) : _ -> x|]]
 -- [1,4]
 ```
@@ -85,14 +85,14 @@ matchAll [1,2,5,9,4] (Multiset Integer) [[mc| $x : #(x+1) : _ -> x|]]
 The `match` expression takes a target, a matcher, and match-clauses as the `matchAll` expression.
 The `match` expression returns only the evaluation result of the first pattern-matching result.
 
-```
+```hs
 match [1,2,5,9,4] (Multiset Integer) [[mc| $x : #(x+1) : _ -> x|]]
 -- 1
 ```
 
 The `match` expression is simply implemented using `matchAll` as follows:
 
-```
+```hs
 match tgt m cs = head $ matchAll tgt m cs
 ```
 
@@ -102,7 +102,7 @@ The `matchAll` and `match` expressions traverse a search tree for pattern matchi
 The reason of the default breadth-first traversal is because to enumerate all the successful pattern-matching results even when they are infinitely many.
 For example, all the pairs of natural numbers can be enumerated by the following `matchAll` expression:
 
-```
+```hs
 take 10 (matchAll [1..] (Set Integer)
            [[mc| $x : $y : _ -> (x, y) |]])
 -- [(1,1),(1,2),(2,1),(1,3),(2,2),(3,1),(1,4),(2,3),(3,2),(4,1)]
@@ -110,7 +110,7 @@ take 10 (matchAll [1..] (Set Integer)
 
 If we change the above `matchAll` to `matchAllDFS`, the order of the pattern-matching results changes as follows:
 
-```
+```hs
 take 10 (matchAllDFS [1..] (Set Integer)
            [[mc| $x : $y : _ -> (x, y) |]])
 -- [(1,1),(1,2),(1,3),(1,4),(1,5),(1,6),(1,7),(1,8),(1,9),(1,10)]
@@ -126,7 +126,7 @@ The users can define pattern-matching algorithms for each pattern by themselves.
 
 preparing...
 
-```
+```hs
 matchAll (1,2) UnorderedEqlPair [[mc| uepair $x $y -> (x,y) |]]
 -- [(1,2),(2,1)]
 
@@ -138,7 +138,7 @@ A matcher is represented as a data type whose name and constructor's name is ide
 
 preparing...
 
-```
+```hs
 data UnorderedEqlPair = UnorderedEqlPair
 instance (Eq a) -> Matcher UnorderedEqlPair (a, a)
 
@@ -151,7 +151,7 @@ uepair p1 p2 = Pattern (\_ UnorderedEqlPair (t1, t2) ->
                           ,twoMAtoms (MAtom p1 Eql t2) (MAtom p2 Eql t1)])
 ```
 
-```
+```hs
 matchAll (1,2) (UnorderedPair Eql) [[mc| uepair $x $y => (x,y) |]]
 -- [(1,2),(2,1)]
 
@@ -159,7 +159,7 @@ matchAll (1,2) (UnorderedPair Eql) [[mc| upair #2 $x => x |]]
 -- [1]
 ```
 
-```
+```hs
 data UnorderedPair m = UnorderedPair m
 instance Matcher m a => Matcher (UnorderedPair m) (a, a)
 
@@ -178,7 +178,7 @@ upair p1 p2 = Pattern (\_ (UnorderedPair m') (t1, t2) ->
 
 We can extract all twin primes from the list of prime numbers by pattern matching:
 
-```
+```hs
 take 10 (matchAll primes (List Integer)
            [[mc| _ ++ $p : #(p+2) : _ -> (p, p+2) |]])
 -- [(3,5),(5,7),(11,13),(17,19),(29,31),(41,43),(59,61),(71,73),(101,103),(107,109)]
@@ -186,7 +186,7 @@ take 10 (matchAll primes (List Integer)
 
 It is also possible to enumerate all the pairs of prime numbers whose form is (p, p+6):
 
-```
+```hs
 take 10 (matchAll primes (List Integer)
            [[mc| _ ++ $p : _ ++ #(p+6) : _ -> (p, p+6) |]])
 -- [(5,11),(7,13),(11,17),(13,19),(17,23),(23,29),(31,37),(37,43),(41,47),(47,53)]
@@ -194,7 +194,7 @@ take 10 (matchAll primes (List Integer)
 
 ### Poker hand
 
-```
+```hs
 poker cs =
   match cs (Multiset CardM)
     [[mc| card $s $n :
@@ -253,7 +253,7 @@ poker cs =
 We benchmarked this library using the program that enumerates the first 100 twin primes.
 This Haskell library is faster (more than 20 times in this case) than the original Egison interpreter!
 
-```
+```hs
 $ cat benchmark/prime-pairs-2.hs
 {-# LANGUAGE QuasiQuotes     #-}
 {-# LANGUAGE GADTs           #-}
@@ -273,7 +273,7 @@ $ time ./benchmark/prime-pairs-2
 ./benchmark/prime-pairs-2  0.01s user 0.01s system 64% cpu 0.024 total
 ```
 
-```
+```hs
 $ cat benchmark/prime-pairs-2.egi
 (define $n 100)
 (define $primes {2 3 5 7 11 13 17 ... 4391 4397 4409})
