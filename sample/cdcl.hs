@@ -94,14 +94,14 @@ getStage l trail =
 
 deleteLiteral :: Integer -> [([Integer], [Integer])] -> [([Integer], [Integer])]
 deleteLiteral l cnf =
-  map (\(c1, c2) -> (matchAll c1 (Multiset Literal)
+  map (\(c1, c2) -> (matchAllDFS c1 (Multiset Literal)
                        [[mc| (!#l & $m) : _ -> m |]],
                      c2))
       cnf
 
 deleteClausesWith :: Integer -> [([Integer], [Integer])] -> [([Integer], [Integer])]
 deleteClausesWith l cnf =
-  matchAll cnf (Multiset (Pair (Multiset Literal) (Multiset Literal)))
+  matchAllDFS cnf (Multiset (Pair (Multiset Literal) (Multiset Literal)))
     [[mc| ((!(#l : _), _) & $c) : _ -> c |]]
 
 assignTrue :: Integer -> [([Integer], [Integer])] -> [([Integer], [Integer])]
