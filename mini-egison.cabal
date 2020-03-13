@@ -137,3 +137,4 @@ benchmark prime-pairs
     , mini-egison
     , criterion >= 1
     , primes
+    , egison >= 3.10.0 && < 3.11
