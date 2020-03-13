@@ -250,43 +250,26 @@ poker cs =
 
 ## Benchmark
 
-We benchmarked this library using the program that enumerates the first 100 twin primes.
-This Haskell library is faster (more than 20 times in this case) than the original Egison interpreter!
+We benchmarked this library using the program that enumerates the first 50 (p, p+6) primes.
+This Haskell library is much faster than the original Egison interpreter!
 
-```hs
-$ cat benchmark/prime-pairs-2.hs
-{-# LANGUAGE QuasiQuotes     #-}
-{-# LANGUAGE GADTs           #-}
-
-import Control.Egison
-import Data.Numbers.Primes
-
-main :: IO ()
-main = do
-  let n = 100
-  let ans = take n (matchAll primes (List Integer)
-                     [[mc| _ ++ $p : #(p+2) : _ -> (p, p+2) |]])
-  putStrLn $ show ans
-$ stack ghc -- benchmark/prime-pairs-2.hs
-$ time ./benchmark/prime-pairs-2
-[(3,5),(5,7),(11,13), ..., (3671,3673),(3767,3769),(3821,3823)]
-./benchmark/prime-pairs-2  0.01s user 0.01s system 64% cpu 0.024 total
 ```
+$ cabal new-bench prime-pairs
+...
+benchmarking (p, p+6) pairs/50/egison
+time                 5.066 s    (4.610 s .. 5.608 s)
+                     0.999 R²   (0.995 R² .. 1.000 R²)
+mean                 4.932 s    (4.807 s .. 5.017 s)
+std dev              120.2 ms   (34.72 ms .. 161.7 ms)
+variance introduced by outliers: 19% (moderately inflated)
 
-```hs
-$ cat benchmark/prime-pairs-2.egi
-(define $n 100)
-(define $primes {2 3 5 7 11 13 17 ... 4391 4397 4409})
-
-(define $twin-primes
-  (match-all primes (list integer)
-    [<join _ <cons $p <cons ,(+ p 2) _>>>
-     [p (+ p 2)]]))
-
-(take n twin-primes)
-$ time stack exec egison -- -t benchmark/prime-pairs-2.egi
-{[3 5] [5 7] [11 13] ... [3671 3673] [3767 3769] [3821 3823]}
-stack exec egison -- -t benchmark/prime-pairs-2.egi  0.54s user 0.04s system 97% cpu 0.593 total
+benchmarking (p, p+6) pairs/50/miniEgison
+time                 2.415 ms   (2.264 ms .. 2.527 ms)
+                     0.984 R²   (0.975 R² .. 0.991 R²)
+mean                 2.196 ms   (2.106 ms .. 2.266 ms)
+std dev              252.3 μs   (219.0 μs .. 296.6 μs)
+variance introduced by outliers: 73% (severely inflated)
+...
 ```
 
 ## Sponsors
