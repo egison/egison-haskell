@@ -10,5 +10,5 @@ main = do
   args <- getArgs
   let n = read (head args)
   let ans = take n (matchAll primes (List Integer)
-                     [[mc| join _ (cons $p (cons #(p+2) _)) => (p, p+2) |]])
+                     [[mc| _ ++ $p : #(p+2) : _ -> (p, p+2) |]])
   putStrLn $ show ans

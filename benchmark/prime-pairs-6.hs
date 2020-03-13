@@ -8,5 +8,5 @@ main :: IO ()
 main = do
   let n = 100
   let ans = take n (matchAll primes (List Integer)
-                     [[mc| join _ (cons $p (join _ (cons #(p+6) _))) => (p, p+6) |]])
+                     [[mc| _ ++ $p : _ ++ #(p+6) : _ -> (p, p+6) |]])
   putStrLn $ show ans
