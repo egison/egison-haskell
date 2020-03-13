@@ -91,3 +91,33 @@ Executable cdcl
   Hs-Source-Dirs:      sample
   default-language: Haskell2010
   ghc-options:  -O3
+
+benchmark comb2
+  type: exitcode-stdio-1.0
+  main-is: comb2.hs
+  hs-source-dirs: benchmark
+  ghc-options: -O3 -Wall -threaded -rtsopts -with-rtsopts=-N
+  default-language: Haskell2010
+  default-extensions:
+      TemplateHaskell
+    , QuasiQuotes
+    , GADTs
+  build-depends:
+      base
+    , mini-egison
+    , criterion >= 1
+
+benchmark perm2
+  type: exitcode-stdio-1.0
+  main-is: perm2.hs
+  hs-source-dirs: benchmark
+  ghc-options: -O3 -Wall -threaded -rtsopts -with-rtsopts=-N
+  default-language: Haskell2010
+  default-extensions:
+      TemplateHaskell
+    , QuasiQuotes
+    , GADTs
+  build-depends:
+      base
+    , mini-egison
+    , criterion >= 1
