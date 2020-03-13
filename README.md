@@ -152,10 +152,10 @@ uepair p1 p2 = Pattern (\_ UnorderedEqlPair (t1, t2) ->
 ```
 
 ```hs
-matchAll (1,2) (UnorderedPair Eql) [[mc| uepair $x $y => (x,y) |]]
+matchAll (1,2) (UnorderedPair Eql) [[mc| uepair $x $y -> (x,y) |]]
 -- [(1,2),(2,1)]
 
-matchAll (1,2) (UnorderedPair Eql) [[mc| upair #2 $x => x |]]
+matchAll (1,2) (UnorderedPair Eql) [[mc| upair #2 $x -> x |]]
 -- [1]
 ```
 
