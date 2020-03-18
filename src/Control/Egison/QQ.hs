@@ -69,7 +69,7 @@ import           Language.Egison.Parser.Pattern.Mode.Haskell.TH
 -- 
 -- A match clause that contains a wildcard
 -- 
--- > [mc| _ => "Matched" |]
+-- > [mc| _ -> "Matched" |]
 -- 
 -- is rewritten to
 -- 
@@ -80,7 +80,7 @@ import           Language.Egison.Parser.Pattern.Mode.Haskell.TH
 -- 
 -- A match clause that contains a pattern variable
 -- 
--- > [mc| $x => x |]
+-- > [mc| $x -> x |]
 -- 
 -- is rewritten to
 -- 
@@ -91,7 +91,7 @@ import           Language.Egison.Parser.Pattern.Mode.Haskell.TH
 -- 
 -- A match clause that contains a value pattern
 -- 
--- > [mc| cons $x (cons $y (cons #(x + 1) (cons $z nil))) => (x, y, z) |]
+-- > [mc| cons $x (cons $y (cons #(x + 1) (cons $z nil))) -> (x, y, z) |]
 -- 
 -- is rewritten to
 -- 
@@ -102,7 +102,7 @@ import           Language.Egison.Parser.Pattern.Mode.Haskell.TH
 -- 
 -- A match clause that contains an and-pattern
 -- 
--- > [mc| (cons _ _) & $x => x |]
+-- > [mc| (cons _ _) & $x -> x |]
 -- 
 -- is rewritten to
 -- 
@@ -113,7 +113,7 @@ import           Language.Egison.Parser.Pattern.Mode.Haskell.TH
 -- 
 -- A match clause that contains an or-pattern
 -- 
--- > [mc| nil | (cons _ _) => "Matched" |]
+-- > [mc| nil | (cons _ _) -> "Matched" |]
 -- 
 -- is rewritten to
 -- 
