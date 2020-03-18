@@ -95,7 +95,7 @@ import           Language.Egison.Parser.Pattern.Mode.Haskell.TH
 -- 
 -- is rewritten to
 -- 
--- > MatchClause (cons (PatVar "x") (cons (PatVar "y") (cons (ValuePat (\HCons x (HCons (y HNil)) -> x + 1)) (cons (PatVar "z") nil))))
+-- > MatchClause (cons (PatVar "x") (cons (PatVar "y") (cons (valuePat (\HCons x (HCons (y HNil)) -> x + 1)) (cons (PatVar "z") nil))))
 -- >             (\HCons x (HCons (y (HCons z HNil))) -> (x, y, z))
 -- 
 -- === And-patterns
