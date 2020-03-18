@@ -17,56 +17,25 @@ card :: Pattern Suit Eql ctx xs
      -> Pattern Card CardM ctx (xs :++: ys)
 card p1 p2 = Pattern (\_ _ (Card s n) -> [twoMAtoms (MAtom p1 Eql s) (MAtom p2 M.Integer n)])
 
+poker :: [Card] -> String
 poker cs =
   match cs (Multiset CardM)
-    [[mc| card $s $n :
-           card #s #(n-1) :
-            card #s #(n-2) :
-             card #s #(n-3) :
-              card #s #(n-4) :
-               _ -> "Straight flush" |],
-     [mc| card _ $n :
-           card _ #n :
-            card _ #n :
-             card _ #n :
-              _ :
-               _ -> "Four of a kind" |],
-     [mc| card _ $m :
-           card _ #m :
-            card _ #m :
-             card _ $n :
-              card _ #n :
-                _ -> "Full house" |],
-     [mc| card $s _ :
-           card #s _ :
-            card #s _ :
-             card #s _ :
-              card #s _ :
-               _ -> "Flush" |],
-     [mc| card _ $n :
-           card _ #(n-1) :
-            card _ #(n-2) :
-             card _ #(n-3) :
-              card _ #(n-4) :
-               _ -> "Straight" |],
-     [mc| card _ $n :
-           card _ #n :
-            card _ #n :
-             _ :
-              _ :
-               _ -> "Three of a kind" |],
-     [mc| card _ $m :
-           card _ #m :
-            card _ $n :
-             card _ #n :
-              _ :
-               _ -> "Two pair" |],
-     [mc| card _ $n :
-           card _ #n :
-            _ :
-             _ :
-              _ :
-               _ -> "One pair" |],
+    [[mc| [card $s $n, card #s #(n-1), card #s #(n-2), card #s #(n-3), card #s #(n-4)] ->
+          "Straight flush" |],
+     [mc| [card _ $n, card _ #n, card _ #n, card _ #n, _] ->
+          "Four of a kind" |],
+     [mc| [card _ $m, card _ #m, card _ #m, card _ $n, card _ #n] ->
+          "Full house" |],
+     [mc| [card $s _, card #s _, card #s _, card #s _, card #s _] ->
+          "Flush" |],
+     [mc| [card _ $n, card _ #(n-1), card _ #(n-2), card _ #(n-3), card _ #(n-4)] ->
+          "Straight" |],
+     [mc| [card _ $n, card _ #n, card _ #n, _, _] ->
+          "Three of a kind" |],
+     [mc| [card _ $m, card _ #m, card _ $n, card _ #n, _] ->
+          "Two pair" |],
+     [mc| [card _ $n, card _ #n, _, _, _] ->
+          "One pair" |],
      [mc| _ -> "Nothing" |]]
 
 main :: IO ()
