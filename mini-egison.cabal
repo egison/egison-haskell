@@ -117,10 +117,16 @@ benchmark perm2
       TemplateHaskell
     , QuasiQuotes
     , GADTs
+    , DeriveGeneric
+    , StandaloneDeriving
+    , FlexibleInstances
+  other-modules: BenchImport
   build-depends:
       base
     , mini-egison
     , criterion >= 1
+    , egison >= 3.10.0 && < 3.11
+    , deepseq
 
 benchmark prime-pairs
   type: exitcode-stdio-1.0
@@ -132,9 +138,14 @@ benchmark prime-pairs
       TemplateHaskell
     , QuasiQuotes
     , GADTs
+    , DeriveGeneric
+    , StandaloneDeriving
+    , FlexibleInstances
+  other-modules: BenchImport
   build-depends:
       base
     , mini-egison
     , criterion >= 1
     , primes
     , egison >= 3.10.0 && < 3.11
+    , deepseq

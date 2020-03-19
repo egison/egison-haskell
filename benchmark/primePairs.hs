@@ -3,29 +3,17 @@
 import           Control.Egison
 
 import           Data.Numbers.Primes            ( primes )
-import           Language.Egison                ( initialEnv
-                                                , runEgisonExpr
-                                                , EgisonValue
-                                                )
-import           Language.Egison.CmdOptions     ( defaultOption
-                                                , EgisonOpts(..)
-                                                )
+
+import           BenchImport
 import           Criterion.Main
 
-
-runWithEgison :: String -> IO EgisonValue
-runWithEgison expr = do
-  egisonEnv   <- initialEnv option
-  Right value <- runEgisonExpr option egisonEnv expr
-  pure value
-  where option = defaultOption { optSExpr = False }
 
 primePairs2 :: Int -> [(Int, Int)]
 primePairs2 n = take n
   $ matchAll primes (List Integer) [[mc| _ ++ $p : #(p+2) : _ -> (p, p+2) |]]
 
-primePairs2Egison :: Int -> IO EgisonValue
-primePairs2Egison n = runWithEgison expr
+primePairs2Egison :: Int -> IO EgisonExpr
+primePairs2Egison n = parseEgison expr
  where
   expr =
     "take "
@@ -38,8 +26,8 @@ primePairs6 n = take n $ matchAll
   (List Integer)
   [[mc| _ ++ $p : _ ++ #(p+6) : _ -> (p, p+6) |]]
 
-primePairs6Egison :: Int -> IO EgisonValue
-primePairs6Egison n = runWithEgison expr
+primePairs6Egison :: Int -> IO EgisonExpr
+primePairs6Egison n = parseEgison expr
  where
   expr =
     "take "
@@ -52,7 +40,7 @@ main = defaultMain
     "(p, p+2) pairs"
     [ bgroup
       "50"
-      [ bench "egison" $ whnfAppIO primePairs2Egison 50
+      [ env (primePairs2Egison 50) $ bench "egison" . whnfIO . evalEgison
       , bench "miniEgison" $ nf primePairs2 50
       ]
     , bench "12800" $ nf primePairs2 12800
@@ -63,7 +51,7 @@ main = defaultMain
     "(p, p+6) pairs"
     [ bgroup
       "50"
-      [ bench "egison" $ whnfAppIO primePairs6Egison 50
+      [ env (primePairs6Egison 50) $ bench "egison" . whnfIO . evalEgison
       , bench "miniEgison" $ nf primePairs6 50
       ]
     , bench "128" $ nf primePairs6 128
