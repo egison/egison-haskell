@@ -32,6 +32,7 @@ library
       Control.Egison.Match
       Control.Egison.Matcher
       Control.Egison.QQ
+      Control.Egison.View
   other-modules:
       Control.Egison.QQ.Internal
       Paths_mini_egison
