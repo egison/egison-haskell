@@ -33,6 +33,7 @@ library
       Control.Egison.Matcher
       Control.Egison.QQ
   other-modules:
+      Control.Egison.QQ.Internal
       Paths_mini_egison
   hs-source-dirs:
       src
