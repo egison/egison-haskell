@@ -5,6 +5,7 @@ module Control.Egison
   , module Control.Egison.Match
   , module Control.Egison.Matcher
   , module Control.Egison.QQ
+  , module Control.Egison.QQ.View
   ) where
 
 import           Control.Egison.Core

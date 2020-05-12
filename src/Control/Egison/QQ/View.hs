@@ -4,7 +4,7 @@
 
 -- | Concise interface of miniEgison using view patterns and pattern synonyms.
 
-module Control.Egison.View
+module Control.Egison.QQ.View
   ( pattern Matches
   , pattern Match
   , pattern Exactly
@@ -76,7 +76,7 @@ makeMatchExp = fmap snd . makeView
 makeMatchPat :: String -> Q Pat
 makeMatchPat content = do
   (vars, view) <- makeView content
-  [p| ($(pure view) -> Control.Egison.View.Is $(pure . TupP $ map VarP vars)) |]
+  [p| ($(pure view) -> Control.Egison.QQ.View.Is $(pure . TupP $ map VarP vars)) |]
 
 makeView :: String -> Q ([Name], Exp)
 makeView content = do
