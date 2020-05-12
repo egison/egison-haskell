@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE QuasiQuotes           #-}
 {-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE ViewPatterns          #-}
 
 import           Control.Egison
 
@@ -37,6 +38,5 @@ main = do
   putStrLn $ show $ f t1 -- [3]
   putStrLn $ show $ f t2 -- [0]
  where
-   f t = matchAll t (TreeM Eql)
-           [[mc| nodePat $x _ _ -> x |],
-            [mc| leafPat -> 0 |]]
+   f [view| as TreeM Eql of nodePat $x _ _ |] = x
+   f [view| as TreeM Eql of leafPat        |] = 0
