@@ -93,11 +93,12 @@ parsePatternExpr haskellMode content = case Pat.parseNonGreedy mode content of
   Right x -> pure x
   where mode = ParseMode { haskellMode, fixities = Just listFixities }
 
-compilePattern :: Pat.Expr Name Name Exp -> ([Name] -> Exp) -> Q Exp
+compilePattern :: Pat.Expr Name Name Exp -> ([Name] -> Exp) -> Q ([Name], Exp)
 compilePattern pat makeBody = do
   (clauseExp, bindings) <- runStateT (cataM go pat) []
   let bodyExp = bsFun bindings $ makeBody bindings
-  pure $ AppE (AppE (ConE 'Control.Egison.Core.MatchClause) clauseExp) bodyExp
+  let exp = AppE (AppE (ConE 'Control.Egison.Core.MatchClause) clauseExp) bodyExp
+  pure (bindings, exp)
  where
   bsFun bs = LamE [toHListPat bs]
   go Pat.WildcardF     = pure $ ConE 'Control.Egison.Core.Wildcard

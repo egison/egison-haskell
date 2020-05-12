@@ -116,7 +116,8 @@ compile content = do
   (pat, rest) <- parsePatternExpr mode content
   bodySource  <- takeBody rest
   body        <- parseExp mode bodySource
-  compilePattern pat $ const body
+  (_, mc) <- compilePattern pat $ const body
+  pure mc
  where
   takeBody ('-' : '>' : xs) = pure xs
   takeBody xs               = fail $ "\"->\" is expected, but found " ++ show xs

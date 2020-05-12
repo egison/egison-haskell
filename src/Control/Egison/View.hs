@@ -26,8 +26,9 @@ import qualified Data.Char                     as Char
                                                 ( isSpace )
 
 import           Language.Haskell.TH            ( Q
+                                                , Name
                                                 , Exp(..)
-                                                , Pat
+                                                , Pat(..)
                                                 )
 import           Language.Haskell.TH.Quote      ( QuasiQuoter(..) )
 
@@ -70,7 +71,15 @@ view = QuasiQuoter { quoteExp  = makeMatchExp
       ++ s
 
 makeMatchExp :: String -> Q Exp
-makeMatchExp content = do
+makeMatchExp = fmap snd . makeView
+
+makeMatchPat :: String -> Q Pat
+makeMatchPat content = do
+  (vars, view) <- makeView content
+  [p| ($(pure view) -> Control.Egison.View.Is $(pure . TupP $ map VarP vars)) |]
+
+makeView :: String -> Q ([Name], Exp)
+makeView content = do
   afterAs              <- takeAs (skipSpace content)
   (matcherStr, patStr) <- expectOf afterAs ""
   mode                 <- parseMode
@@ -81,7 +90,10 @@ makeMatchExp content = do
     $  "unexpected "
     ++ show rest
     ++ " found after the pattern"
-  [| \x -> Control.Egison.Match.matchAll x $(pure matcher) [$(compilePattern pat (TupE . map VarE))] |]
+  (vars, mc) <- compilePattern pat (TupE . map VarE)
+  view       <-
+    [| \x -> Control.Egison.Match.matchAll x $(pure matcher) [$(pure mc)] |]
+  pure (vars, view)
  where
   skipSpace [] = []
   skipSpace (c : cs) | Char.isSpace c = skipSpace cs
@@ -92,6 +104,3 @@ makeMatchExp content = do
   expectOf ('o' : 'f' : rest) acc = pure (acc, rest)
   expectOf (c         : cs  ) acc = expectOf cs $ acc ++ [c]
   expectOf []                 _   = fail "'of' is expected but not found"
-
-makeMatchPat :: String -> Q Pat
-makeMatchPat content = [p| ($(makeMatchExp content) -> Match) |]
