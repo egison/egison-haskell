@@ -161,13 +161,20 @@ benchmark poker
     , QuasiQuotes
     , GADTs
     , DeriveGeneric
+    , DeriveLift
     , StandaloneDeriving
     , FlexibleInstances
+    , TypeApplications
     , TypeOperators
     , MultiParamTypeClasses
+  other-modules:
+    BenchImport
+    PokerBenchImport
   build-depends:
       base
     , mini-egison
     , criterion >= 1
+    , egison >= 3.10.0 && < 3.11
     , deepseq
     , general-games >= 1.1.0 && < 1.2
+    , template-haskell

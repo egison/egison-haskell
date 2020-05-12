@@ -1,51 +1,30 @@
 {-# OPTIONS_GHC -fno-full-laziness #-}
 
-import           Control.Egison          hiding ( Integer )
-import qualified Control.Egison                as M
+import           Control.Egison
 
+import           Data.List                      ( intercalate )
 import           Data.Maybe                     ( fromJust )
-import           GHC.Generics                   ( Generic )
-import           Control.DeepSeq                ( NFData )
+import           Data.Functor                   ( ($>) )
+import           Control.Monad                  ( guard )
+import           Language.Haskell.TH.Syntax    as TH
+                                                ( lift
+                                                , runIO
+                                                )
 import qualified Game.Implement.Card.Standard  as Game
-                                                ( Suit
+                                                ( Suit(..)
                                                 , Rank
                                                 , PlayingCard(..)
                                                 )
 import qualified Game.Game.Poker               as Game
                                                 ( mkHand
                                                 , typeOfPokerHand
-                                                , PokerHandType(..)
-                                                , allPossibleHands
+                                                , PokerHandType
                                                 )
 
+import           BenchImport
+import           PokerBenchImport
 import           Criterion.Main
 
-data CardM = CardM
-instance Matcher CardM Game.PlayingCard
-
-card
-  :: Pattern Game.Suit Eql ctx xs
-  -> Pattern Int M.Integer (ctx :++: xs) ys
-  -> Pattern Game.PlayingCard CardM ctx (xs :++: ys)
-card p1 p2 = Pattern
-  (\_ _ (Game.PlayingCard rank suit) ->
-    [twoMAtoms (MAtom p1 Eql suit) (MAtom p2 M.Integer (rankNumber rank))]
-  )
-  where rankNumber r = fromEnum r + 1
-
-data PokerHand
-  = StraightFlush
-  | FourOfAKind
-  | FullHouse
-  | Flush
-  | Straight
-  | ThreeOfAKind
-  | TwoPair
-  | OnePair
-  | HighCard
-  deriving Generic
-
-instance NFData PokerHand
 
 pokerHand :: [Game.PlayingCard] -> PokerHand
 pokerHand cs = match
@@ -70,27 +49,82 @@ pokerHand cs = match
   , [mc| _ -> HighCard |]
   ]
 
-pokerHandGames :: [Game.PlayingCard] -> PokerHand
-pokerHandGames = toPokerHand . Game.typeOfPokerHand . fromJust . Game.mkHand
+pokerHandGames :: [Game.PlayingCard] -> Game.PokerHandType
+pokerHandGames = Game.typeOfPokerHand . fromJust . Game.mkHand
+
+pokerHandEgison :: String -> IO EgisonExpr
+pokerHandEgison cards = parseEgison expr
  where
-  toPokerHand Game.HighCard          = HighCard
-  toPokerHand Game.Pair              = OnePair
-  toPokerHand Game.TwoPair           = TwoPair
-  toPokerHand Game.ThreeOfAKind      = ThreeOfAKind
-  toPokerHand (Game.Straight _)      = Straight
-  toPokerHand Game.Flush             = Flush
-  toPokerHand Game.FullHouse         = FullHouse
-  toPokerHand Game.FourOfAKind       = FourOfAKind
-  toPokerHand (Game.StraightFlush _) = StraightFlush
-  toPokerHand Game.RoyalFlush        = StraightFlush
+  expr = unwords
+    [ "let suit :="
+    , suitMatcher
+    , "\nin let cardM :="
+    , cardMatcher
+    , "\nin map ("
+    , matchExpr
+    , ")"
+    , cards
+    ]
+  suitMatcher = intercalate
+    "\n  | "
+    ["algebraicDataMatcher", "spade", "heart", "diamond", "club"]
+  cardMatcher =
+    intercalate "\n  | " ["algebraicDataMatcher", "card suit (mod 13)"]
+  matchExpr = intercalate
+    "\n  "
+    [ "\\match as multiset cardM with"
+    , "| card $s $n :: card #s #(n-1) :: card #s #(n-2) :: card #s #(n-3) :: card #s #(n-4) :: []"
+    , "  -> \"Straight flush\""
+    , "| card _ $n :: card _ #n :: card _ #n :: card _ #n :: _ :: []"
+    , "  -> \"Four of a kind\""
+    , "| card _ $m :: card _ #m :: card _ #m :: card _ $n :: card _ #n :: []"
+    , "  -> \"Full house\""
+    , "| card $s _ :: card #s _ :: card #s _ :: card #s _ :: card #s _ :: []"
+    , "  -> \"Flush\""
+    , "| card _ $n :: card _ #(n-2) :: card _ #(n-2) :: card _ #(n-3) :: card _ #(n-4) :: []"
+    , "  -> \"Straight\""
+    , "| card _ $n :: card _ #n :: card _ #n :: _ :: _ :: []"
+    , "  -> \"Three of a kind\""
+    , "| card _ $m :: card _ #m :: card _ $n :: card _ #n :: _ :: []"
+    , "  -> \"Two pair\""
+    , "| card _ $n :: card _ #n :: _ :: _ :: _ :: []"
+    , "  -> \"One pair\""
+    , "| _ :: _ :: _ :: _ :: _ :: [] -> \"Nothing\""
+    ]
 
 main :: IO ()
 main = defaultMain
-  [bgroup "poker hands" [makeGroup 128, makeGroup 256, makeGroup 512, makeGroup 1024]]
+  [ bgroup
+      "poker hands"
+      [ makeGroup 50
+      , makeGroup 100
+      , makeGroup 200
+      , makeGroup 400
+      , makeGroup 800
+      , makeGroup 1600
+      ]
+  ]
  where
-  makeGroup n = bgroup
-    (show n)
-    [ bench "miniEgison" $ nf (map pokerHand) $ hands n
-    , bench "general-games" $ nf (map pokerHandGames) $ hands n
-    ]
-  hands n = take n $ Game.allPossibleHands
+  makeGroup n =
+    bgroup (show n)
+      $  [ bench "general-games" . nf (map pokerHandGames) $ hands n
+         , bench "miniEgison" . nf (map pokerHand) $ hands n
+         ]
+      ++ (guard (n < 500) $> egisonBench n)
+  egisonBench n =
+    env (pokerHandEgison . renderHandsForEgison $ hands n)
+      $ bench "egison"
+      . whnfIO
+      . evalEgison
+  renderHandsForEgison = list . map (list . map renderCardForEgison)
+  list xs = "[ " ++ intercalate ", " xs ++ " ]"
+  renderCardForEgison (Game.PlayingCard rank suit) =
+    unwords ["Card", renderSuitForEgison suit, renderRankForEgison rank]
+  renderSuitForEgison Game.Spades   = "Spade"
+  renderSuitForEgison Game.Hearts   = "Heart"
+  renderSuitForEgison Game.Diamonds = "Diamond"
+  renderSuitForEgison Game.Clubs    = "Club"
+  renderRankForEgison r = show $ fromEnum r + 1
+  hands n = take
+    n
+    $(TH.lift =<< read @[[Game.PlayingCard]] <$> TH.runIO (readFile "./benchmark/cards.txt"))

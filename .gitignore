@@ -28,6 +28,7 @@ sample/**
 
 benchmark/**
 !benchmark/*.hs
+!benchmark/*.txt
 !benchmark/*.md
 
 stack.yaml.lock
