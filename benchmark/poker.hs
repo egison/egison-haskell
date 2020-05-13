@@ -27,7 +27,7 @@ import           Criterion.Main
 
 
 pokerHand :: [Game.PlayingCard] -> PokerHand
-pokerHand cs = match
+pokerHand cs = matchDFS
   cs
   (Multiset CardM)
   [ [mc| [card $s $n, card #s #(n-1), card #s #(n-2), card #s #(n-3), card #s #(n-4)] ->
@@ -72,7 +72,7 @@ pokerHandEgison cards = parseEgison expr
     intercalate "\n  | " ["algebraicDataMatcher", "card suit (mod 13)"]
   matchExpr = intercalate
     "\n  "
-    [ "\\match as multiset cardM with"
+    [ "\\x -> matchDFS x as multiset cardM with"
     , "| card $s $n :: card #s #(n-1) :: card #s #(n-2) :: card #s #(n-3) :: card #s #(n-4) :: []"
     , "  -> \"Straight flush\""
     , "| card _ $n :: card _ #n :: card _ #n :: card _ #n :: _ :: []"
