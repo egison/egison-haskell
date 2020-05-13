@@ -10,11 +10,11 @@ perm2 n =
   matchAllDFS [1 .. n] (Multiset Something) [[mc| $x : $y : _ -> (x, y) |]]
 
 perm2Native :: Int -> [(Int, Int)]
-perm2Native n = go [1 .. n] [] []
+perm2Native n = go [1 .. n] []
  where
-  go [] _ acc = acc
-  go (x : xs) rest acc =
-    [ (x, y) | y <- rest ++ xs ] ++ go xs (rest ++ [x]) acc
+  go [] _ = []
+  go (x : xs) rest =
+    [ (x, y) | y <- rest ++ xs ] ++ go xs (rest ++ [x])
 
 perm2Egison :: Int -> IO EgisonExpr
 perm2Egison n = parseEgison expr
