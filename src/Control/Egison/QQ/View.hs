@@ -80,8 +80,7 @@ makeMatchPat content = do
 
 makeView :: String -> Q ([Name], Exp)
 makeView content = do
-  afterAs              <- takeAs (skipSpace content)
-  (matcherStr, patStr) <- expectOf afterAs ""
+  (patStr, matcherStr) <- expectAs content ""
   mode                 <- parseMode
   matcher              <- parseExp mode matcherStr
   (pat, rest)          <- parsePatternExpr mode patStr
@@ -98,9 +97,6 @@ makeView content = do
   skipSpace [] = []
   skipSpace (c : cs) | Char.isSpace c = skipSpace cs
                      | otherwise      = c : cs
-  takeAs ('a' : 's' : xs) = pure xs
-  takeAs (c         : _ ) = fail $ "'as' is expected, but got " ++ show c
-  takeAs []               = fail "'as' is expected, but not found"
-  expectOf ('o' : 'f' : rest) acc = pure (acc, rest)
-  expectOf (c         : cs  ) acc = expectOf cs $ acc ++ [c]
-  expectOf []                 _   = fail "'of' is expected but not found"
+  expectAs ('a' : 's' : rest) acc = pure (acc, rest)
+  expectAs (c         : cs  ) acc = expectAs cs $ acc ++ [c]
+  expectAs []                 _   = fail "'as' is expected but not found"

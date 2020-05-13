@@ -38,5 +38,5 @@ main = do
   putStrLn $ show $ f t1 -- [3]
   putStrLn $ show $ f t2 -- [0]
  where
-   f [view| as TreeM Eql of nodePat $x _ _ |] = x
-   f [view| as TreeM Eql of leafPat        |] = 0
+   f [view| nodePat $x _ _ as TreeM Eql |] = x
+   f [view| leafPat        as TreeM Eql |] = 0
