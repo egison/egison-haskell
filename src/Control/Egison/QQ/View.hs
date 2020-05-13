@@ -1,16 +1,10 @@
 {-# LANGUAGE ViewPatterns    #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TemplateHaskell #-}
 
--- | Concise interface of miniEgison using view patterns and pattern synonyms.
+-- | Concise interface of miniEgison using view patterns.
 
 module Control.Egison.QQ.View
-  ( pattern Matches
-  , pattern Match
-  , pattern Exactly
-  , pattern Is
-  , pattern Are
-  , view
+  ( view
   )
 where
 
@@ -32,32 +26,6 @@ import           Language.Haskell.TH            ( Q
                                                 )
 import           Language.Haskell.TH.Quote      ( QuasiQuoter(..) )
 
-pattern Matches :: [a] -> [a]
-pattern Matches xs <- xs
-
-{-# COMPLETE Matches #-}
-
-pattern Match :: [a]
-pattern Match <- _:_
-
-pattern Null :: [a]
-pattern Null <- []
-
-{-# COMPLETE Null, Match #-}
-
-pattern Exactly :: a -> [a]
-pattern Exactly x <- [x]
-
-pattern Is :: a -> [a]
-pattern Is x <- x:_
-
-{-# COMPLETE Null, Is #-}
-
-pattern Are :: [a] -> [a]
-pattern Are xs <- xs@(_:_)
-
-{-# COMPLETE Null, Are #-}
-
 view :: QuasiQuoter
 view = QuasiQuoter { quoteExp  = makeMatchExp
                    , quotePat  = makeMatchPat
@@ -76,7 +44,7 @@ makeMatchExp = fmap snd . makeView
 makeMatchPat :: String -> Q Pat
 makeMatchPat content = do
   (vars, view) <- makeView content
-  [p| ($(pure view) -> Control.Egison.QQ.View.Is $(pure . TupP $ map VarP vars)) |]
+  [p| ($(pure view) -> $(pure . TupP $ map VarP vars):_) |]
 
 makeView :: String -> Q ([Name], Exp)
 makeView content = do
